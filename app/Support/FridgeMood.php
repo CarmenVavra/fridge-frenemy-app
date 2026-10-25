@@ -37,12 +37,14 @@ final class FridgeMood
 
     /**
      * Mood of the "Bilanz" avatar, derived from the rescue ratio (0–1).
+     * Without any eaten or thrown-away item (null) there is nothing to judge yet.
      *
      * @return array{mood: string, word: string, line: string}
      */
-    public static function forRescueRatio(float $ratio): array
+    public static function forRescueRatio(?float $ratio): array
     {
         return match (true) {
+            $ratio === null => ['mood' => self::MEH, 'word' => 'Abwartend', 'line' => 'Noch nichts gerettet, noch nichts verschwendet. Er beobachtet dich.'],
             $ratio >= 0.72 => ['mood' => self::HAPPY, 'word' => 'Stolz', 'line' => 'Er hält dich für fast zurechnungsfähig.'],
             $ratio >= 0.5 => ['mood' => self::MEH, 'word' => 'Skeptisch', 'line' => 'Er hat Notizen gemacht.'],
             default => ['mood' => self::ANGRY, 'word' => 'Wütend', 'line' => 'Er redet nicht mehr mit dir.'],

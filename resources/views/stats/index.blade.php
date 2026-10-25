@@ -31,14 +31,22 @@
 
     <section class="px-5 py-4" aria-labelledby="quote-label">
         <div class="flex justify-between text-xs font-bold uppercase tracking-[.06em]">
-            <h2 id="quote-label">Rettungsquote</h2><span>{{ $percent }}%</span>
+            <h2 id="quote-label">Rettungsquote</h2><span>{{ $percent === null ? '–' : $percent.'%' }}</span>
         </div>
-        <div class="mt-2 flex h-3.5 bg-accent" role="progressbar" aria-labelledby="quote-label"
-             aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100">
-            <div class="bg-ink transition-[width] duration-[400ms]" style="width: {{ $percent }}%"></div>
-        </div>
-        <div class="mt-1.5 flex justify-between text-xs font-semibold text-neutral-700">
-            <span>Gerettet</span><span>Verschwendet</span>
-        </div>
+        @if ($percent === null)
+            <div class="mt-2 h-3.5 bg-neutral-200" role="progressbar" aria-labelledby="quote-label"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuetext="Noch keine Daten"></div>
+            <p class="mt-1.5 text-xs font-semibold text-neutral-700">Noch keine Daten: Markiere Artikel als aufgegessen oder weggeworfen.</p>
+        @else
+            <div class="mt-2 flex h-3.5 bg-accent" role="progressbar" aria-labelledby="quote-label"
+                 aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="bg-ink transition-[width] duration-[400ms]" style="width: {{ $percent }}%"></div>
+            </div>
+        @endif
+        @if ($percent !== null)
+            <div class="mt-1.5 flex justify-between text-xs font-semibold text-neutral-700">
+                <span>Gerettet</span><span>Verschwendet</span>
+            </div>
+        @endif
     </section>
 </x-layouts.app>

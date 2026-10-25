@@ -19,7 +19,7 @@ class StatsController extends Controller
         $stats = $household->statsOrCreate();
         $ratio = $stats->rescueRatio();
         $mood = FridgeMood::forRescueRatio($ratio);
-        $percent = (int) round($ratio * 100);
+        $percent = $ratio === null ? null : (int) round($ratio * 100);
 
         return view('stats.index', compact('household', 'stats', 'mood', 'percent'));
     }

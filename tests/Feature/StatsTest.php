@@ -40,4 +40,17 @@ class StatsTest extends TestCase
             ->assertSee($mood)
             ->assertSee($percent);
     }
+
+    public function test_balance_is_neutral_before_anything_was_eaten_or_thrown_away(): void
+    {
+        $household = Household::factory()->create();
+        $user = User::factory()->for($household)->create();
+
+        $this->actingAs($user)->get(route('stats.index'))
+            ->assertOk()
+            ->assertSee('Abwartend')
+            ->assertSee('Noch keine Daten')
+            ->assertDontSee('Wütend')
+            ->assertDontSee('0%');
+    }
 }

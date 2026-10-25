@@ -56,10 +56,12 @@ class HouseholdStat extends Model
     }
 
     /**
-     * Share of rescued items between 0 and 1.
+     * Share of rescued items between 0 and 1, or null while nothing has been eaten or thrown away yet.
      */
-    public function rescueRatio(): float
+    public function rescueRatio(): ?float
     {
-        return $this->saved_count / max(1, $this->saved_count + $this->trashed_count);
+        $resolved = $this->saved_count + $this->trashed_count;
+
+        return $resolved === 0 ? null : $this->saved_count / $resolved;
     }
 }
