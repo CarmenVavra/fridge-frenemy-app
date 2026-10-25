@@ -112,10 +112,13 @@ document.addEventListener('alpine:init', () => {
         get baro() {
             const minDays = this.items.length ? Math.min(...this.items.map((i) => i.days)) : 99;
             const level = minDays <= 0 ? 3 : minDays <= 3 ? 2 : 1;
+            // "1 Artikel läuft", "2 Artikel laufen": Artikel stays the same, only the verb changes.
+            const count = (n, one, many) => `${n} Artikel ${n === 1 ? one : many}`;
+            const expired = this.items.filter((i) => i.days <= 0).length;
             const variants = {
                 1: { word: 'Entspannt', mood: 'happy', line: 'Nichts läuft ab. Ich traue dem Frieden nicht.' },
-                2: { word: 'Genervt', mood: 'meh', line: `${this.crit.length} Artikel laufen in 2–3 Tagen ab. Ich zähle mit.` },
-                3: { word: 'Sauer', mood: 'angry', line: `${this.items.filter((i) => i.days <= 0).length} Artikel laufen heute ab oder sind schon hinüber.` },
+                2: { word: 'Genervt', mood: 'meh', line: `${count(this.crit.length, 'läuft', 'laufen')} in 2–3 Tagen ab. Ich zähle mit.` },
+                3: { word: 'Sauer', mood: 'angry', line: `${count(expired, 'läuft heute ab oder ist', 'laufen heute ab oder sind')} schon hinüber.` },
             };
             const face = FACES[variants[level].mood];
 
