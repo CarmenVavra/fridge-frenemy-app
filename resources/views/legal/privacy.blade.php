@@ -24,7 +24,7 @@
             </p>
             <p>
                 Rechtsgrundlage ist die Bereitstellung der App, die du nutzen möchtest (Art. 6 Abs. 1 lit. b DSGVO).
-                Die Daten bleiben gespeichert, solange dein Konto besteht. Verlässt das letzte Mitglied einen Haushalt,
+                Die Daten bleiben gespeichert, bis du dein Konto im Profil löschst. Verlässt das letzte Mitglied einen Haushalt,
                 wird der Haushalt samt Inhalt gelöscht.
             </p>
         </section>
@@ -91,8 +91,8 @@
             <h2 class="ff-kicker text-accent-700" id="rights-title">{{ $usesGemini ? 7 : 6 }}. Deine Rechte</h2>
             <p>
                 Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit
-                und Widerspruch. Schreib dafür einfach eine E-Mail an die oben genannte Adresse, zum Beispiel wenn du dein Konto
-                löschen lassen möchtest.
+                und Widerspruch. Dein Konto kannst du jederzeit selbst im Profil unter „Konto löschen“ entfernen.
+                Für alles andere schreib einfach eine E-Mail an die oben genannte Adresse.
             </p>
             <p>
                 Wenn du meinst, dass wir deine Daten nicht korrekt verarbeiten, kannst du dich bei der österreichischen

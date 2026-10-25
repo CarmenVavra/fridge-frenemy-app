@@ -63,6 +63,8 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:10,1')->name('profile.invite-code');
     Route::post('/profil/haushalt/beitreten', [ProfileController::class, 'joinHousehold'])
         ->middleware('throttle:10,1')->name('profile.join');
+    Route::delete('/profil', [ProfileController::class, 'destroy'])
+        ->middleware('throttle:10,1')->name('profile.destroy');
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

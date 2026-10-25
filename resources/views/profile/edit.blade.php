@@ -94,6 +94,34 @@
         </form>
     </section>
 
+    {{-- Delete account --}}
+    <section class="border-t-2 border-ink px-5 py-5" aria-labelledby="delete-account-title">
+        <h2 id="delete-account-title" class="ff-kicker text-accent-700">Konto löschen</h2>
+        <p id="delete-account-hint" class="mt-2 text-[13px] font-medium leading-[1.4]">
+            Dein Konto, dein Name und deine E-Mail-Adresse werden endgültig gelöscht. Das lässt sich nicht rückgängig machen.
+            @if ($household->users_count === 1)
+                <strong class="text-accent-700">Du bist das einzige Mitglied: „{{ $household->name }}“ wird mit allen Artikeln und Zählern gelöscht.</strong>
+            @else
+                „{{ $household->name }}“ mit allen Artikeln bleibt für die anderen Mitglieder erhalten.
+            @endif
+        </p>
+        <form method="POST" action="{{ route('profile.destroy') }}" class="mt-3 flex flex-col gap-3"
+              x-data @submit="if (! confirm('Konto wirklich endgültig löschen?')) $event.preventDefault()">
+            @csrf
+            @method('DELETE')
+            <div>
+                <label for="delete-password" class="ff-label">Passwort zur Bestätigung</label>
+                <input id="delete-password" name="password" type="password" class="ff-input" required autocomplete="current-password"
+                       aria-describedby="delete-account-hint @error('password', 'deleteAccount') delete-password-error @enderror"
+                       @error('password', 'deleteAccount') aria-invalid="true" @enderror>
+                @error('password', 'deleteAccount')<p id="delete-password-error" class="ff-error">{{ $message }}</p>@enderror
+            </div>
+            <button type="submit" class="ff-btn border-accent-700 bg-transparent text-accent-700 hover:bg-accent/10">
+                <x-icon name="trash-2" />Konto endgültig löschen
+            </button>
+        </form>
+    </section>
+
     <section class="flex flex-col gap-4 border-t-2 border-ink px-5 py-5">
         <form method="POST" action="{{ route('logout') }}">
             @csrf

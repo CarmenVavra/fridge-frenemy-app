@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\DeleteAccount;
 use App\Actions\JoinHousehold;
+use App\Http\Requests\DeleteAccountRequest;
 use App\Http\Requests\JoinHouseholdRequest;
 use App\Http\Requests\UpdateHouseholdRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -50,5 +53,19 @@ class ProfileController extends Controller
 
         return redirect()->route('fridge.index')
             ->with('toast', 'Willkommen bei '.$household->name.'. Neuer Kühlschrank, neue Vorwürfe.');
+    }
+
+    public function destroy(DeleteAccountRequest $request, DeleteAccount $delete): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        Auth::guard('web')->logout();
+        $delete->handle($user);
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->with('status', 'Dein Konto ist gelöscht. Der Kühlschrank tut so, als wäre er nicht gekränkt.');
     }
 }
