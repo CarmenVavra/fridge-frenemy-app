@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-4d338549-1163-46db-bfa3-3ede5fb15b7d/styles.css">
+<script src="_ds/modernist-4d338549-1163-46db-bfa3-3ede5fb15b7d/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:var(--color-bg);font-family:var(--font-body);color:var(--color-text)}
+a{color:var(--color-accent-700)}a:hover{color:var(--color-accent-600)}
+@keyframes ffPulse{0%,100%{background:var(--color-accent)}50%{background:var(--color-accent-600)}}
+@keyframes ffScan{0%{transform:translateY(0)}100%{transform:translateY(176px)}}
+@keyframes ffToast{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+@keyframes ffPush{from{transform:translateY(-130%)}to{transform:none}}
+@keyframes ffStamp{from{transform:rotate(-12deg) scale(1.8);opacity:0}to{transform:rotate(-12deg) scale(1);opacity:1}}
+@keyframes ffShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height:100vh;box-sizing:border-box;padding:40px 32px;display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start;justify-content:center">
+
+<div style="width:300px;display:flex;flex-direction:column;gap:20px;padding-top:8px">
+  <div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-700)">Interaktiver Prototyp</div>
+    <h1 style="margin:8px 0 0;font-family:var(--font-heading);font-weight:800;font-size:40px;line-height:.95;letter-spacing:-.02em">Fridge<br>Frenemy</h1>
+    <p style="margin:12px 0 0;font-size:15px;line-height:1.45;color:var(--color-neutral-800)">Der passiv-aggressive Kühlschrank-Butler. Vier Tabs, ein Mood-Kühlschrank, null Gnade.</p>
+  </div>
+  <div style="height:2px;background:var(--color-text)"></div>
+  <div style="display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.4">
+    <div><strong>Tippen:</strong> Karte öffnen, dann <em>Aufgegessen</em> (Konfetti, Vibration) oder <em>Weggeworfen</em> (rutscht weg).</div>
+    <div><strong>Scan:</strong> Barcode simulieren, Open-Food-Facts-Treffer, Haltbarkeit +7 Tage.</div>
+    <div><strong>Butler:</strong> Tonalität wechseln — alle Sprüche ändern sich live. Alarm testen zeigt die 08:00-Push.</div>
+    <div><strong>Design:</strong> Modernist-Raster, ein Rot. Gefahrenstufe als 5er-Skala statt Ampelfarben.</div>
+  </div>
+  <button onClick="{{ reset }}" class="btn btn-secondary" style="align-self:flex-start;justify-content:flex-start">Zurücksetzen</button>
+</div>
+
+<div ref="{{ phoneRef }}" style="position:relative;width:390px;height:844px;flex:none;box-sizing:border-box;border:10px solid #201e1d;border-radius:54px;background:var(--color-bg);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)">
+
+  <div style="height:46px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 6px;font-size:15px;font-weight:700">
+    <span>9:41</span>
+    <span style="width:96px;height:26px;background:#201e1d;border-radius:20px;position:absolute;left:50%;top:10px;transform:translateX(-50%)"></span>
+    <span style="display:flex;gap:6px;align-items:center;font-size:12px;letter-spacing:.04em">5G<span style="width:24px;height:12px;border:2px solid #201e1d;box-sizing:border-box;display:block;position:relative"><span style="position:absolute;inset:1px 6px 1px 1px;background:#201e1d"></span></span></span>
+  </div>
+
+  <canvas ref="{{ cvRef }}" width="370" height="824" style="position:absolute;left:0;top:0;width:370px;height:824px;pointer-events:none;z-index:50"></canvas>
+
+  <sc-if value="{{ push }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closePush }}" style="position:absolute;left:10px;right:10px;top:46px;z-index:40;background:#201e1d;color:#fff;padding:14px 16px;display:flex;gap:12px;animation:ffPush .4s cubic-bezier(.2,.9,.3,1);cursor:pointer;box-shadow:var(--shadow-lg)">
+      <div style="width:36px;height:36px;flex:none;background:var(--color-accent);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
+      <div style="min-width:0">
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-400)"><span>Kühlschrank-Butler</span><span>08:00</span></div>
+        <div style="margin-top:4px;font-size:14px;line-height:1.35">{{ pushText }}</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:16px;right:16px;bottom:96px;z-index:30;background:#201e1d;color:#fff;padding:12px 16px;font-size:14px;font-weight:600;animation:ffToast .25s ease-out">{{ toast }}</div>
+  </sc-if>
+
+  <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden">
+
+    <sc-if value="{{ isFridge }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:8px 20px 12px">
+          <span style="font-family:var(--font-heading);font-weight:800;font-size:15px;letter-spacing:.12em;text-transform:uppercase">Fridge Frenemy</span>
+          <span style="font-size:12px;font-weight:600;color:var(--color-neutral-700)">WG Sonnenallee</span>
+        </div>
+
+        <div style="{{ baroStyle }}">
+          <div style="display:flex;justify-content:space-between;gap:12px">
+            <div style="min-width:0">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.9">Aggro-Barometer</div>
+              <div style="margin-top:6px;font-family:var(--font-heading);font-weight:800;font-size:38px;line-height:.95;letter-spacing:-.02em;text-transform:uppercase">{{ baro.word }}</div>
+            </div>
+            <svg width="72" height="72" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" style="flex:none;{{ baro.shake }}">
+              <rect x="20" y="6" width="60" height="88" fill="{{ baro.fill }}"></rect>
+              <path d="M20 34H80"></path><path d="M70 16V26M70 44V62"></path>
+              <circle cx="40" cy="58" r="4" fill="currentColor" stroke="none"></circle><circle cx="58" cy="58" r="4" fill="currentColor" stroke="none"></circle>
+              <path d="{{ baro.brows }}"></path><path d="{{ baro.mouth }}"></path>
+            </svg>
+          </div>
+          <div style="margin-top:10px;font-size:14px;line-height:1.4;font-weight:500">{{ baro.line }}</div>
+          <div style="margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px">
+            <div style="height:6px;background:currentColor"></div>
+            <div style="{{ baro.seg2 }}"></div>
+            <div style="{{ baro.seg3 }}"></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--color-text)">
+          <div style="padding:12px 20px;border-right:2px solid var(--color-text)">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700)">Gerettet</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:28px;line-height:1">{{ saved }}</div>
+          </div>
+          <div style="padding:12px 20px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700)">Schuld</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:28px;line-height:1;color:var(--color-accent-700)">{{ trashed }}</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:2px solid var(--color-text)">
+          <button onClick="{{ fAll }}" style="{{ fStyle.all }}">Alle {{ counts.all }}</button>
+          <button onClick="{{ fCrit }}" style="{{ fStyle.crit }}">Kritisch {{ counts.crit }}</button>
+          <button onClick="{{ fFresh }}" style="{{ fStyle.fresh }}">Frisch {{ counts.fresh }}</button>
+        </div>
+
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:48px 20px;font-family:var(--font-heading);font-weight:800;font-size:22px;line-height:1.15">Nichts zu sehen.<br><span style="color:var(--color-neutral-600)">Verdächtig ordentlich.</span></div>
+        </sc-if>
+
+        <sc-for list="{{ rows }}" as="it" hint-placeholder-count="4">
+          <div style="{{ it.wrap }}">
+            <div onClick="{{ it.toggle }}" style="position:relative;display:grid;grid-template-columns:76px 1fr;border-bottom:2px solid var(--color-text);cursor:pointer;background:{{ it.bg }}">
+              <div style="padding:14px 0 14px 20px;{{ it.dim }}">
+                <div style="font-family:var(--font-heading);font-weight:800;font-size:34px;line-height:1;letter-spacing:-.03em;color:{{ it.numColor }}">{{ it.big }}</div>
+                <div style="margin-top:4px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-700)">{{ it.small }}</div>
+                <sc-if value="{{ it.sweat }}" hint-placeholder-val="{{ false }}">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:6px;display:block;animation:ffShake .5s infinite"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></svg>
+                </sc-if>
+              </div>
+              <div style="padding:14px 20px 14px 4px;min-width:0;{{ it.dim }}">
+                <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+                  <div style="font-family:var(--font-heading);font-weight:800;font-size:19px;line-height:1.1;letter-spacing:-.01em">{{ it.name }}</div>
+                  <div style="display:flex;gap:2px;flex:none;padding-top:5px">
+                    <sc-for list="{{ it.bars }}" as="b" hint-placeholder-count="5"><div style="width:7px;height:12px;background:{{ b }}"></div></sc-for>
+                  </div>
+                </div>
+                <div style="margin-top:3px;font-size:12px;color:var(--color-neutral-700);font-weight:500">{{ it.meta }}</div>
+                <sc-if value="{{ it.quote }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:8px;font-size:13px;line-height:1.38;font-weight:500;color:var(--color-accent-700)">„{{ it.quote }}“</div>
+                </sc-if>
+              </div>
+              <sc-if value="{{ it.expired }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;right:18px;top:38px;transform:rotate(-12deg);border:3px solid var(--color-accent);color:var(--color-accent);padding:2px 10px;font-family:var(--font-heading);font-weight:900;font-size:22px;letter-spacing:.14em;background:rgba(243,242,242,.7);animation:ffStamp .35s cubic-bezier(.2,.9,.3,1) both">R.I.P.</div>
+              </sc-if>
+            </div>
+            <sc-if value="{{ it.open }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--color-text)">
+                <button onClick="{{ it.eat }}" style="display:flex;align-items:center;gap:10px;padding:14px 20px;border:0;border-right:2px solid var(--color-text);background:var(--color-text);color:#fff;font-size:14px;font-weight:700;cursor:pointer;text-align:left" style-hover="background:var(--color-neutral-800)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>Aufgegessen</button>
+                <button onClick="{{ it.trash }}" style="display:flex;align-items:center;gap:10px;padding:14px 20px;border:0;background:var(--color-accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;text-align:left" style-hover="background:var(--color-accent-600)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>Weggeworfen</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <div style="height:24px"></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isScan }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="padding:8px 20px 14px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-700)">Einlagern</div>
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:34px;line-height:1;letter-spacing:-.02em;margin-top:4px">Neuer Verdächtiger</div>
+        </div>
+
+        <sc-if value="{{ scanIdle }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="margin:0 20px;height:230px;background:#201e1d;position:relative;overflow:hidden">
+              <div style="position:absolute;left:36px;right:36px;top:27px;height:176px;overflow:hidden">
+                <sc-if value="{{ scanning }}" hint-placeholder-val="{{ false }}"><div style="height:3px;background:var(--color-accent);box-shadow:0 0 12px var(--color-accent);animation:ffScan .7s ease-in-out infinite alternate"></div></sc-if>
+              </div>
+              <div style="position:absolute;left:30px;top:21px;width:28px;height:28px;border-left:3px solid #fff;border-top:3px solid #fff"></div>
+              <div style="position:absolute;right:30px;top:21px;width:28px;height:28px;border-right:3px solid #fff;border-top:3px solid #fff"></div>
+              <div style="position:absolute;left:30px;bottom:21px;width:28px;height:28px;border-left:3px solid #fff;border-bottom:3px solid #fff"></div>
+              <div style="position:absolute;right:30px;bottom:21px;width:28px;height:28px;border-right:3px solid #fff;border-bottom:3px solid #fff"></div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--color-neutral-400);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase">{{ scanHint }}</div>
+            </div>
+            <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px">
+              <button onClick="{{ doScan }}" class="btn btn-primary btn-block" style="justify-content:flex-start;gap:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M17 7v10"/></svg>Barcode scannen</button>
+              <button onClick="{{ manual }}" class="btn btn-secondary btn-block" style="justify-content:flex-start">Manuell eintragen</button>
+            </div>
+            <div style="margin:0 20px;border-top:2px solid var(--color-text);padding-top:12px;font-size:12px;line-height:1.5;color:var(--color-neutral-700)">Produktname und Kategorie kommen von Open Food Facts. Haltbarkeit startet bei +7 Tagen — du weißt es sowieso besser.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ scanFound }}" hint-placeholder-val="{{ false }}">
+          <div style="border-top:2px solid var(--color-text)">
+            <sc-if value="{{ form.fromScan }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:var(--color-surface);border-bottom:2px solid var(--color-text)">
+                <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Treffer · Open Food Facts</span>
+                <span style="font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--color-neutral-700)">{{ form.code }}</span>
+              </div>
+            </sc-if>
+            <div style="padding:16px 20px;display:flex;flex-direction:column;gap:16px">
+              <div class="field"><label>Produkt</label><input class="input" value="{{ form.name }}" onInput="{{ setName }}" placeholder="z. B. Hüttenkäse"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div>
+                  <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Menge</div>
+                  <div style="display:grid;grid-template-columns:44px 1fr 44px;border:2px solid var(--color-text)">
+                    <button onClick="{{ qtyDown }}" style="height:44px;border:0;background:transparent;cursor:pointer;color:var(--color-text);display:flex;align-items:center;justify-content:center" style-hover="background:var(--color-accent-200)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
+                    <div style="display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px">{{ form.qty }}</div>
+                    <button onClick="{{ qtyUp }}" style="height:44px;border:0;background:transparent;cursor:pointer;color:var(--color-text);display:flex;align-items:center;justify-content:center" style-hover="background:var(--color-accent-200)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Haltbar bis</div>
+                  <div style="display:grid;grid-template-columns:44px 1fr 44px;border:2px solid var(--color-text)">
+                    <button onClick="{{ shelfDown }}" style="height:44px;border:0;background:transparent;cursor:pointer;color:var(--color-text);display:flex;align-items:center;justify-content:center" style-hover="background:var(--color-accent-200)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
+                    <div style="display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">{{ form.dateLabel }}</div>
+                    <button onClick="{{ shelfUp }}" style="height:44px;border:0;background:transparent;cursor:pointer;color:var(--color-text);display:flex;align-items:center;justify-content:center" style-hover="background:var(--color-accent-200)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+                  </div>
+                </div>
+              </div>
+              <div style="font-size:13px;font-weight:500;color:var(--color-accent-700)">Butler: „{{ form.remark }}“</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <button onClick="{{ store }}" class="btn btn-primary btn-block" style="justify-content:flex-start;gap:10px;{{ form.storeStyle }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Einlagern</button>
+                <button onClick="{{ cancel }}" class="btn btn-secondary btn-block" style="justify-content:flex-start">Abbrechen</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isButler }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="padding:8px 20px 16px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-700)">Täglich 08:00 Uhr</div>
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:34px;line-height:1;letter-spacing:-.02em;margin-top:4px">Butler-Tonalität</div>
+        </div>
+        <sc-for list="{{ tones }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.pick }}" style="display:grid;grid-template-columns:28px 1fr;gap:10px;width:100%;text-align:left;padding:14px 20px;border:0;border-top:2px solid var(--color-text);background:{{ t.bg }};color:{{ t.fg }};cursor:pointer;font-family:inherit">
+            <div style="width:20px;height:20px;border:2px solid currentColor;box-sizing:border-box;display:flex;align-items:center;justify-content:center;margin-top:2px"><div style="width:10px;height:10px;background:{{ t.dot }}"></div></div>
+            <div>
+              <div style="font-family:var(--font-heading);font-weight:800;font-size:18px">{{ t.label }}</div>
+              <div style="margin-top:4px;font-size:13px;line-height:1.4;font-weight:500;opacity:.95">„{{ t.sample }}“</div>
+            </div>
+          </button>
+        </sc-for>
+        <div style="border-top:2px solid var(--color-text);padding:16px 20px;display:flex;flex-direction:column;gap:10px">
+          <button onClick="{{ testPush }}" class="btn btn-primary btn-block" style="justify-content:flex-start;gap:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Alarm testen</button>
+          <div style="font-size:12px;line-height:1.5;color:var(--color-neutral-700)">Prüft Artikel mit Ablauf in ≤ 2 Tagen und schickt sie als Push an alle in der WG.</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isStats }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="padding:8px 20px 16px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-700)">WG Sonnenallee</div>
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:34px;line-height:1;letter-spacing:-.02em;margin-top:4px">Bilanz</div>
+        </div>
+        <div style="border-top:2px solid var(--color-text);display:grid;grid-template-columns:140px 1fr">
+          <div style="border-right:2px solid var(--color-text);display:flex;align-items:center;justify-content:center;padding:16px 0;background:{{ avatar.bg }}">
+            <svg width="104" height="104" viewBox="0 0 100 100" fill="none" stroke="#201e1d" stroke-width="3.5" stroke-linecap="round">
+              <rect x="20" y="6" width="60" height="88" fill="{{ avatar.fill }}"></rect>
+              <path d="M20 34H80"></path><path d="M70 16V26M70 44V62"></path>
+              <circle cx="40" cy="58" r="4" fill="#201e1d" stroke="none"></circle><circle cx="58" cy="58" r="4" fill="#201e1d" stroke="none"></circle>
+              <path d="{{ avatar.brows }}"></path><path d="{{ avatar.mouth }}"></path>
+            </svg>
+          </div>
+          <div style="padding:16px 20px;display:flex;flex-direction:column;justify-content:center">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700)">Stimmung</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:26px;line-height:1;margin-top:4px;text-transform:uppercase">{{ avatar.word }}</div>
+            <div style="margin-top:8px;font-size:13px;line-height:1.4;font-weight:500">{{ avatar.line }}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-top:2px solid var(--color-text);border-bottom:2px solid var(--color-text)">
+          <div style="padding:16px 20px;border-right:2px solid var(--color-text)">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase">Helden-Counter</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:64px;line-height:1;letter-spacing:-.03em;margin-top:6px">{{ saved }}</div>
+            <div style="font-size:12px;font-weight:500;color:var(--color-neutral-700);margin-top:2px">Artikel gerettet</div>
+          </div>
+          <div style="padding:16px 20px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700)">Schuld-Counter</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:64px;line-height:1;letter-spacing:-.03em;margin-top:6px;color:var(--color-accent)">{{ trashed }}</div>
+            <div style="font-size:12px;font-weight:500;color:var(--color-neutral-700);margin-top:2px">Opfer der Vergesslichkeit</div>
+          </div>
+        </div>
+        <div style="padding:16px 20px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase"><span>Rettungsquote</span><span>{{ pct }}</span></div>
+          <div style="margin-top:8px;height:14px;background:var(--color-accent);display:flex"><div style="{{ pctBar }}"></div></div>
+          <div style="margin-top:6px;display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--color-neutral-700)"><span>Gerettet</span><span>Verschwendet</span></div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="flex:none;display:grid;grid-template-columns:repeat(4,1fr);border-top:2px solid var(--color-text);background:var(--color-bg);padding-bottom:18px">
+    <button onClick="{{ goFridge }}" style="{{ tabS.fridge }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2Z"/><path d="M5 10h14"/><path d="M15 7v6"/></svg>Fach</button>
+    <button onClick="{{ goScan }}" style="{{ tabS.scan }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M17 7v10"/></svg>Scan</button>
+    <button onClick="{{ goButler }}" style="{{ tabS.butler }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Butler</button>
+    <button onClick="{{ goStats }}" style="{{ tabS.stats }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>Bilanz</button>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;tone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;classic&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;classic&quot;,&quot;italian_mom&quot;,&quot;dramaqueen&quot;,&quot;shakespeare&quot;],&quot;section&quot;:&quot;Butler&quot;},&quot;pushOnLoad&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Butler&quot;}}">
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.initial(); this.phoneRef = React.createRef(); this.cvRef = React.createRef(); this.parts = []; }
+  initial() {
+    return { tab: 'fridge', filter: 'all', tone: null, saved: 12, trashed: 4, toast: '', push: false, leaving: {}, open: {}, scan: { phase: 'idle', code: '', name: '', cat: '', qty: 1, shelf: 7, fromScan: false }, nextId: 100,
+      items: [
+        { id: 1, name: 'Vollmilch', qty: 1, unit: 'Liter', cat: 'Milchprodukte', days: -2 },
+        { id: 2, name: 'Griechischer Joghurt', qty: 2, unit: 'Becher', cat: 'Milchprodukte', days: 0 },
+        { id: 3, name: 'Gouda, jung', qty: 1, unit: 'Packung', cat: 'Käse', days: 1 },
+        { id: 4, name: 'Babyspinat', qty: 1, unit: 'Beutel', cat: 'Gemüse', days: 2 },
+        { id: 5, name: 'Hähnchenbrust', qty: 500, unit: 'g', cat: 'Fleisch', days: 3 },
+        { id: 6, name: 'Eier', qty: 10, unit: 'Stück', cat: 'Eier', days: 9 },
+        { id: 7, name: 'Butter', qty: 1, unit: 'Stück', cat: 'Milchprodukte', days: 21 },
+        { id: 8, name: 'Dijon-Senf', qty: 1, unit: 'Glas', cat: 'Saucen', days: 120 }
+      ] };
+  }
+  componentDidMount() {
+    if (this.state.tone === null) this.setState({ tone: this.props.tone || 'classic' });
+    if (this.props.pushOnLoad) this.t = setTimeout(() => this.testPush(), 1200);
+  }
+  componentWillUnmount() { clearTimeout(this.t); clearTimeout(this.tt); }
+  tone() { return this.state.tone || this.props.tone || 'classic'; }
+  static TONES = {
+    classic: { label: 'Classic', ex: 'Die Milch ist seit 2 Tagen abgelaufen. Ich hoffe, du hast eine gute Krankenversicherung.',
+      exp: (n, d) => `${n} ist seit ${d} ${d === 1 ? 'Tag' : 'Tagen'} abgelaufen. Ich hoffe, du hast eine gute Krankenversicherung.`,
+      today: n => `${n} läuft heute ab. Heute. Nicht irgendwann. Heute.`,
+      soon: n => `${n} hat noch einen Tag. Ich bin nicht wütend. Nur enttäuscht.`,
+      warn: (n, d) => `${n}: noch ${d} Tage. Plan ruhig weiter ohne mich.`, ok: 'Alles unter Kontrolle. Noch.' },
+    italian_mom: { label: 'Italian Mom', ex: 'Hast du den Joghurt gekauft, nur um ihn verfaulen zu lassen? Wie dein Vater damals!',
+      exp: (n, d) => `Hast du ${n} gekauft, nur um es verfaulen zu lassen? ${d} ${d === 1 ? 'Tag' : 'Tage'} schon! Wie dein Vater damals!`,
+      today: n => `${n} läuft heute ab und du sitzt da! Mangia, mangia!`,
+      soon: n => `Mamma hat ${n} nicht gekauft, damit es morgen im Müll liegt. Iss!`,
+      warn: (n, d) => `${n}, noch ${d} Tage. Aber was weiß ich schon, ich bin nur der Kühlschrank.`, ok: 'Bravo, bambino. Du isst endlich ordentlich.' },
+    dramaqueen: { label: 'Drama Queen', ex: 'Der Spinat ist TOT. Und du warst dabei. Ich werde nie wieder derselbe sein.',
+      exp: (n, d) => `${n} ist TOT. Seit ${d} ${d === 1 ? 'Tag' : 'Tagen'}. Und du warst dabei. Ich werde nie wieder derselbe sein.`,
+      today: n => `Heute ist der letzte Tag von ${n}. Ich kann nicht hinsehen. Doch. Ich sehe hin.`,
+      soon: n => `${n} hat noch EINEN Tag. Einen! Mein Herz!`,
+      warn: (n, d) => `${n}: noch ${d} Tage. Ich sage nichts. Ich seufze nur. Laut.`, ok: 'Ausnahmsweise kein Drama. Ich bin fast enttäuscht.' },
+    shakespeare: { label: 'Shakespeare', ex: 'O weh! Welch trauriges Schicksal erleidet dieser Käse im dunklen Verlies deines Gemüsefachs.',
+      exp: (n, d) => `O weh! ${n} ruht nun im dunklen Verlies deines Kühlschranks, dahingeschieden seit ${d} ${d === 1 ? 'Tag' : 'Tagen'}.`,
+      today: n => `Dies ist der letzte Tag von ${n}. Sein oder Nichtsein? Iss!`,
+      soon: n => `Morgen schon welkt ${n} dahin. Willst du zusehen, du Schurke?`,
+      warn: (n, d) => `${n} harrt noch ${d} Tage. Geduld ist keine Tugend des Verderbens.`, ok: 'Ein Kühlschrank in Frieden. Wie selten, wie süß.' }
+  };
+  quote(it) {
+    const T = Component.TONES[this.tone()]; const d = it.days;
+    if (d < 0) return T.exp(it.name, -d); if (d === 0) return T.today(it.name);
+    if (d === 1) return T.soon(it.name); if (d <= 3) return T.warn(it.name, d); return '';
+  }
+  level(d) { return d < 0 ? 5 : d <= 1 ? 4 : d <= 3 ? 3 : d <= 7 ? 2 : 1; }
+  flash(msg) { clearTimeout(this.tt); this.setState({ toast: msg }); this.tt = setTimeout(() => this.setState({ toast: '' }), 2400); }
+  confetti(x, y) {
+    const cv = this.cvRef.current; if (!cv) return; const c = cv.getContext('2d');
+    const cols = ['#ec3013', '#201e1d', '#ffc4b8', '#ff563c', '#ffffff', '#7d7979'];
+    for (let i = 0; i < 90; i++) { const a = Math.random() * Math.PI * 2, s = 3 + Math.random() * 8; this.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 5, w: 5 + Math.random() * 7, h: 3 + Math.random() * 5, r: Math.random() * 6, vr: (Math.random() - .5) * .4, col: cols[i % cols.length], life: 0 }); }
+    if (this.raf) return;
+    const tick = () => {
+      c.clearRect(0, 0, cv.width, cv.height);
+      this.parts = this.parts.filter(p => p.life < 90);
+      this.parts.forEach(p => { p.life++; p.vy += .3; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr; c.save(); c.translate(p.x, p.y); c.rotate(p.r); c.globalAlpha = Math.min(1, (90 - p.life) / 30); c.fillStyle = p.col; c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); c.restore(); });
+      if (this.parts.length) this.raf = requestAnimationFrame(tick); else { this.raf = 0; c.clearRect(0, 0, cv.width, cv.height); }
+    };
+    this.raf = requestAnimationFrame(tick);
+  }
+  act(id, kind, e) {
+    if (this.state.leaving[id]) return;
+    if (kind === 'eat') {
+      try { navigator.vibrate && navigator.vibrate([100, 50, 100]); } catch (x) {}
+      const r = this.phoneRef.current.getBoundingClientRect();
+      this.confetti(e.clientX - r.left - 10, e.clientY - r.top - 10);
+    }
+    this.setState(s => ({ leaving: { ...s.leaving, [id]: kind } }));
+    setTimeout(() => this.setState(s => {
+      const it = s.items.find(i => i.id === id); const l = { ...s.leaving }; delete l[id];
+      return { items: s.items.filter(i => i.id !== id), leaving: l, saved: s.saved + (kind === 'eat' ? 1 : 0), trashed: s.trashed + (kind === 'trash' ? 1 : 0) };
+    }), 460);
+    this.flash(kind === 'eat' ? 'Gerettet. Der Kühlschrank ist fast stolz.' : 'Verbucht. Der Schuld-Counter dankt dir.');
+  }
+  face(m) {
+    if (m === 'happy') return { mouth: 'M38 76Q50 88 62 76', brows: 'M34 48L46 46M54 46L66 48', fill: '#ffffff' };
+    if (m === 'meh') return { mouth: 'M40 78L60 78', brows: 'M34 49L46 49M54 49L66 49', fill: '#ffffff' };
+    return { mouth: 'M38 84Q50 72 62 84', brows: 'M33 46L46 53M67 46L54 53', fill: '#ffc4b8' };
+  }
+  testPush() {
+    const worst = [...this.state.items].sort((a, b) => a.days - b.days)[0];
+    this.setState({ push: true, pushItem: worst, tab: this.state.tab });
+    clearTimeout(this.pt); this.pt = setTimeout(() => this.setState({ push: false }), 6000);
+  }
+  renderVals() {
+    const s = this.state, tone = this.tone(), T = Component.TONES;
+    const sorted = [...s.items].sort((a, b) => a.days - b.days);
+    const crit = sorted.filter(i => i.days <= 3), fresh = sorted.filter(i => i.days > 3);
+    const list = s.filter === 'crit' ? crit : s.filter === 'fresh' ? fresh : sorted;
+    const minD = sorted.length ? sorted[0].days : 99;
+    const lvl = minD <= 0 ? 3 : minD <= 3 ? 2 : 1;
+    const bw = [null, { w: 'Entspannt', m: 'happy', line: 'Nichts läuft ab. Ich traue dem Frieden nicht.', bg: 'var(--color-surface)', fg: 'var(--color-text)' }, { w: 'Genervt', m: 'meh', line: `${crit.length} Artikel laufen in 2–3 Tagen ab. Ich zähle mit.`, bg: 'var(--color-accent-200)', fg: 'var(--color-text)' }, { w: 'Sauer', m: 'angry', line: `${sorted.filter(i => i.days <= 0).length} Artikel laufen heute ab oder sind schon hinüber.`, bg: 'var(--color-accent)', fg: '#fff' }][lvl];
+    const bf = this.face(bw.m);
+    const baro = { word: bw.w, line: bw.line, mouth: bf.mouth, brows: bf.brows, fill: lvl === 3 ? 'rgba(255,255,255,0)' : bf.fill, shake: lvl === 3 ? 'animation:ffShake .4s infinite' : '',
+      seg2: `height:6px;background:currentColor;opacity:${lvl >= 2 ? 1 : .2}`, seg3: `height:6px;background:currentColor;opacity:${lvl >= 3 ? 1 : .2}` };
+    const baroStyle = `padding:16px 20px 18px;border-top:2px solid var(--color-text);border-bottom:2px solid var(--color-text);background:${bw.bg};color:${bw.fg};${lvl === 3 ? 'animation:ffPulse 1.2s ease-in-out infinite;' : ''}`;
+    const rows = list.map(it => {
+      const lv = this.level(it.days), q = this.quote(it), lo = s.leaving[it.id], isOpen = !!s.open[it.id] || (it.days <= 1);
+      const exp = it.days < 0;
+      return { name: it.name, meta: `${it.qty} ${it.unit} · ${it.cat}`, quote: q, expired: exp, sweat: it.days >= 0 && it.days <= 1, open: isOpen,
+        big: exp ? '−' + (-it.days) : String(it.days), small: exp ? 'Überfällig' : it.days === 0 ? 'Heute' : it.days === 1 ? 'Tag' : 'Tage',
+        numColor: lv >= 4 ? 'var(--color-accent)' : 'var(--color-text)', dim: exp ? 'opacity:.55' : '', bg: exp ? 'var(--color-surface)' : 'transparent',
+        bars: [1, 2, 3, 4, 5].map(n => n <= lv ? (lv >= 4 ? 'var(--color-accent)' : 'var(--color-text)') : 'var(--color-neutral-300)'),
+        wrap: lo === 'trash' ? 'transition:transform .45s ease-in,opacity .45s;transform:translateY(130%);opacity:0' : lo === 'eat' ? 'transition:transform .45s ease-in,opacity .45s;transform:scale(.9);opacity:0' : '',
+        toggle: () => this.setState(st => ({ open: { ...st.open, [it.id]: !st.open[it.id] } })),
+        eat: e => { e.stopPropagation(); this.act(it.id, 'eat', e); }, trash: e => { e.stopPropagation(); this.act(it.id, 'trash', e); } };
+    });
+    const fs = a => `padding:12px 0;border:0;border-right:${a === 'fresh' ? 0 : 2}px solid var(--color-text);background:${s.filter === a ? 'var(--color-text)' : 'transparent'};color:${s.filter === a ? '#fff' : 'var(--color-text)'};font-size:13px;font-weight:700;cursor:pointer`;
+    const tb = a => `display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 0 8px 18px;border:0;border-top:4px solid ${s.tab === a ? 'var(--color-accent)' : 'transparent'};margin-top:-2px;background:transparent;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;color:${s.tab === a ? 'var(--color-text)' : 'var(--color-neutral-600)'}`;
+    const sc = s.scan; const dt = new Date(Date.now() + sc.shelf * 864e5);
+    const form = { ...sc, dateLabel: dt.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' }),
+      remark: sc.shelf <= 2 ? 'Das ist kein Einlagern, das ist Aufschieben.' : sc.shelf >= 14 ? 'Optimistisch. Das gefällt mir.' : 'Sieben Tage. Ich setze mir schon mal eine Erinnerung.',
+      storeStyle: sc.name.trim() ? '' : 'opacity:.45;pointer-events:none' };
+    const ratio = s.saved / Math.max(1, s.saved + s.trashed);
+    const am = ratio >= .72 ? 'happy' : ratio >= .5 ? 'meh' : 'angry', af = this.face(am);
+    const avatar = { ...af, bg: am === 'angry' ? 'var(--color-accent-200)' : 'var(--color-surface)',
+      word: am === 'happy' ? 'Stolz' : am === 'meh' ? 'Skeptisch' : 'Wütend',
+      line: am === 'happy' ? 'Er hält dich für fast zurechnungsfähig.' : am === 'meh' ? 'Er hat Notizen gemacht.' : 'Er redet nicht mehr mit dir.' };
+    const toneKeys = Object.keys(T);
+    const push = s.pushItem ? (this.quote(s.pushItem) || T[tone].ok) : '';
+    const go = t => () => this.setState({ tab: t });
+    return {
+      phoneRef: this.phoneRef, cvRef: this.cvRef, rows, baro, baroStyle, saved: s.saved, trashed: s.trashed, toast: s.toast, push: s.push, pushText: push,
+      isFridge: s.tab === 'fridge', isScan: s.tab === 'scan', isButler: s.tab === 'butler', isStats: s.tab === 'stats', isEmpty: list.length === 0,
+      counts: { all: sorted.length, crit: crit.length, fresh: fresh.length },
+      fStyle: { all: fs('all'), crit: fs('crit'), fresh: fs('fresh') },
+      fAll: () => this.setState({ filter: 'all' }), fCrit: () => this.setState({ filter: 'crit' }), fFresh: () => this.setState({ filter: 'fresh' }),
+      tabS: { fridge: tb('fridge'), scan: tb('scan'), butler: tb('butler'), stats: tb('stats') },
+      goFridge: go('fridge'), goScan: go('scan'), goButler: go('butler'), goStats: go('stats'),
+      scanIdle: sc.phase !== 'found', scanning: sc.phase === 'scanning', scanFound: sc.phase === 'found', form,
+      scanHint: sc.phase === 'scanning' ? 'Suche Barcode …' : 'Barcode im Rahmen platzieren',
+      doScan: () => { if (sc.phase === 'scanning') return; this.setState({ scan: { ...sc, phase: 'scanning' } });
+        const P = [['4008400402222', 'Hüttenkäse Natur', 'Milchprodukte'], ['4012345678901', 'Bio Tofu geräuchert', 'Vegetarisch'], ['5000127281350', 'Lachsfilet, frisch', 'Fisch']]; const p = P[Math.floor(Math.random() * P.length)];
+        setTimeout(() => this.setState({ scan: { phase: 'found', code: p[0], name: p[1], cat: p[2], qty: 1, shelf: 7, fromScan: true } }), 1300); },
+      manual: () => this.setState({ scan: { phase: 'found', code: '', name: '', cat: 'Sonstiges', qty: 1, shelf: 7, fromScan: false } }),
+      setName: e => { const v = e.target.value; this.setState(st => ({ scan: { ...st.scan, name: v } })); },
+      qtyUp: () => this.setState(st => ({ scan: { ...st.scan, qty: st.scan.qty + 1 } })), qtyDown: () => this.setState(st => ({ scan: { ...st.scan, qty: Math.max(1, st.scan.qty - 1) } })),
+      shelfUp: () => this.setState(st => ({ scan: { ...st.scan, shelf: st.scan.shelf + 1 } })), shelfDown: () => this.setState(st => ({ scan: { ...st.scan, shelf: Math.max(0, st.scan.shelf - 1) } })),
+      cancel: () => this.setState({ scan: { ...sc, phase: 'idle' } }),
+      store: () => { if (!sc.name.trim()) return; this.setState(st => ({ items: [...st.items, { id: st.nextId, name: sc.name.trim(), qty: sc.qty, unit: 'Stück', cat: sc.cat, days: sc.shelf }], nextId: st.nextId + 1, scan: { ...sc, phase: 'idle' }, tab: 'fridge', filter: 'all' })); this.flash(`${sc.name.trim()} eingelagert. Ich behalte es im Auge.`); },
+      tones: toneKeys.map(k => ({ label: T[k].label, sample: T[k].ex, bg: k === tone ? 'var(--color-text)' : 'transparent', fg: k === tone ? '#fff' : 'var(--color-text)', dot: k === tone ? 'var(--color-accent)' : 'transparent', pick: () => this.setState({ tone: k }) })),
+      testPush: () => this.testPush(), closePush: () => this.setState({ push: false }),
+      avatar, pct: Math.round(ratio * 100) + '%', pctBar: `width:${ratio * 100}%;background:var(--color-text);transition:width .4s`,
+      reset: () => this.setState({ ...this.initial(), tone: this.props.tone || 'classic' })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        @apply bg-bg font-sans text-ink antialiased;
+        font-size: 15px;
+        line-height: 1.55;
+    }
+
+    button {
+        font-family: inherit;
+    }
+
+    :focus {
+        outline: none;
+    }
+
+    :focus-visible {
+        outline: 2px solid #ec3013;
+        outline-offset: 2px;
+    }
+
+    ::selection {
+        background: rgba(236, 48, 19, .3);
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@layer components {
+    /* Kicker / small uppercase labels (min. 12px per project rules) */
+    .ff-kicker {
+        @apply text-xs font-bold uppercase;
+        letter-spacing: .14em;
+    }
+
+    .ff-display {
+        @apply font-extrabold;
+        font-size: 34px;
+        line-height: 1;
+        letter-spacing: -.02em;
+    }
+
+    /* Buttons – flush-left labels, flat, no radius */
+    .ff-btn {
+        @apply flex w-full cursor-pointer items-center justify-start gap-2.5 border-2 border-transparent px-4 py-3 text-left text-[15px] font-extrabold leading-tight transition-colors disabled:cursor-not-allowed disabled:opacity-45;
+    }
+
+    .ff-btn-primary {
+        @apply ff-btn bg-accent text-bg hover:bg-accent-600 active:bg-accent-700;
+    }
+
+    .ff-btn-secondary {
+        @apply ff-btn border-ink bg-transparent text-ink hover:bg-ink/5 active:bg-ink/10;
+    }
+
+    .ff-btn-ink {
+        @apply ff-btn bg-ink text-white hover:bg-neutral-800;
+    }
+
+    .ff-label {
+        @apply mb-1.5 block text-xs font-bold uppercase;
+        letter-spacing: .06em;
+    }
+
+    .ff-input {
+        @apply block min-h-[44px] w-full border-2 border-ink bg-surface px-3 py-2 text-base text-ink placeholder:text-neutral-600 hover:border-neutral-800 focus-visible:border-accent;
+        caret-color: #ec3013;
+        outline-offset: 0;
+    }
+
+    .ff-error {
+        @apply mt-1.5 text-[13px] font-semibold text-accent-700;
+    }
+
+    .ff-stepper-btn {
+        @apply flex h-11 cursor-pointer items-center justify-center border-0 bg-transparent text-ink hover:bg-accent-200 disabled:cursor-not-allowed disabled:opacity-45;
+    }
+
+    .ff-rip {
+        @apply pointer-events-none absolute right-[18px] top-[38px] animate-ff-stamp border-3 border-accent px-2.5 py-0.5 text-[22px] font-black text-accent;
+        letter-spacing: .14em;
+        background: rgba(243, 242, 242, .7);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+/* html5-qrcode injects a <video>; let it fill the viewfinder */
+#ff-reader video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+}
