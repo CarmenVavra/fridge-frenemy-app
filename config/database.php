@@ -59,6 +59,9 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                // netcup MySQL 8.4 answers native prepared statements right after DDL
+                // (e.g. creating the migrations table) with "1615 needs to be re-prepared".
+                PDO::ATTR_EMULATE_PREPARES => (bool) env('DB_EMULATE_PREPARES', true),
             ]) : [],
         ],
 
