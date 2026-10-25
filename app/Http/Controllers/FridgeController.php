@@ -5,13 +5,13 @@ namespace App\Http\Controllers;
 use App\Actions\ResolveFridgeItem;
 use App\Enums\FridgeItemStatus;
 use App\Http\Requests\StoreFridgeItemRequest;
+use App\Http\Requests\UpdateFridgeItemExpiryRequest;
 use App\Models\FridgeItem;
 use App\Models\Household;
 use App\Services\FridgeDashboardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class FridgeController extends Controller
@@ -39,11 +39,24 @@ class FridgeController extends Controller
             'category' => $data['category'] ?? null,
             'quantity' => $data['quantity'],
             'unit' => $data['unit'] ?? 'Stück',
-            'expires_at' => Carbon::today()->addDays((int) $data['shelf_days']),
+            'expires_at' => $data['expires_at'],
         ]);
 
         return redirect()->route('fridge.index')
             ->with('toast', $data['name'].' eingelagert. Ich behalte es im Auge.');
+    }
+
+    /**
+     * Correct the best-before date, e.g. after a scan kept the +7 days default.
+     */
+    public function updateExpiry(UpdateFridgeItemExpiryRequest $request, FridgeItem $item): RedirectResponse
+    {
+        abort_if($item->status->isResolved(), 409, 'Dieser Artikel ist bereits erledigt.');
+
+        $item->update($request->validated());
+
+        return redirect()->route('fridge.index')
+            ->with('toast', 'Neues Datum für '.$item->name.' notiert. Ich vergesse nichts.');
     }
 
     public function consume(Request $request, FridgeItem $item, ResolveFridgeItem $resolve): JsonResponse|RedirectResponse

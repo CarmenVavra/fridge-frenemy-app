@@ -61,6 +61,10 @@
             </div>
         </div>
 
+        @error('expires_at')
+            <p role="alert" class="border-b-2 border-ink bg-accent-100 px-5 py-3 text-[13px] font-semibold text-accent-700">{{ $message }}</p>
+        @enderror
+
         {{-- Filter --}}
         <div class="grid grid-cols-3 border-b-2 border-ink" role="group" aria-label="Artikel filtern">
             @foreach (['all' => ['Alle', 'items'], 'crit' => ['Kritisch', 'crit'], 'fresh' => ['Frisch', 'fresh']] as $key => [$label, $list])
@@ -135,6 +139,17 @@
                                 :aria-label="item.name + ' weggeworfen'">
                             <x-icon name="trash-2" :size="18" />Weggeworfen
                         </button>
+                        <form method="POST" :action="item.expiry_url" class="col-span-2 flex items-end gap-2 border-t-2 border-ink px-5 py-3">
+                            @csrf
+                            @method('PATCH')
+                            <div class="min-w-0 flex-1">
+                                <label :for="'expires-' + item.id" class="ff-label">Haltbar bis</label>
+                                <input :id="'expires-' + item.id" name="expires_at" type="date" class="ff-input" :value="item.expires_on" :min="today" required>
+                            </div>
+                            <button type="submit" class="ff-btn-secondary w-auto flex-none px-4" :aria-label="'Datum von ' + item.name + ' speichern'">
+                                <x-icon name="calendar" :size="18" />Ändern
+                            </button>
+                        </form>
                     </div>
                 </li>
             </template>

@@ -4,7 +4,7 @@ Der passiv-aggressive Kühlschrank-Butler: eine mobile PWA, die Haltbarkeiten ü
 Wenn etwas abläuft, beschämt sie den Haushalt mit sarkastischen Sprüchen, auf Wunsch von Google Gemini.
 
 - **Fach**: Aggro-Barometer, Helden- und Schuld-Counter, Filter, Produktkarten mit Gefahrenskala, R.I.P.-Stempel und Schweißtropfen. *Aufgegessen* löst Konfetti und Vibration aus, *Weggeworfen* lässt die Karte wegrutschen.
-- **Scan**: Barcode per Kamera (`html5-qrcode`), Daten von Open Food Facts, Haltbarkeit +7 Tage.
+- **Scan**: Barcode per Kamera (`html5-qrcode`), Daten von Open Food Facts. Das Ablaufdatum steht nicht im Barcode: Es startet bei +7 Tagen und wird per Datumsfeld von der Packung übernommen. Im Fach lässt es sich nachträglich ändern.
 - **Butler**: Tonalität wählen (Classic, Italian Mom, Drama Queen, Shakespeare) und den Alarm testen.
 - **Bilanz**: Rettungsquote und die Stimmung des Kühlschranks.
 - Konten mit Haushalten: WG-Mitglieder treten per Einladungscode bei. Passwort ändern und „Passwort vergessen“ sind eingebaut.

@@ -22,7 +22,7 @@ class StoreFridgeItemRequest extends FormRequest
             'category' => ['nullable', 'string', 'max:60'],
             'quantity' => ['required', 'integer', 'min:1', 'max:9999'],
             'unit' => ['nullable', 'string', 'max:20'],
-            'shelf_days' => ['required', 'integer', 'min:0', 'max:3650'],
+            'expires_at' => UpdateFridgeItemExpiryRequest::RULE,
         ];
     }
 
@@ -34,7 +34,15 @@ class StoreFridgeItemRequest extends FormRequest
         return [
             'name' => 'Produkt',
             'quantity' => 'Menge',
-            'shelf_days' => 'Haltbarkeit',
+            'expires_at' => 'Haltbar bis',
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return UpdateFridgeItemExpiryRequest::MESSAGES;
     }
 }

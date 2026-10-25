@@ -34,6 +34,8 @@ Route::middleware('auth')->group(function () {
         ->middleware('can:update,item')->name('fridge.consume');
     Route::patch('/fach/artikel/{item}/weggeworfen', [FridgeController::class, 'trash'])
         ->middleware('can:update,item')->name('fridge.trash');
+    Route::patch('/fach/artikel/{item}/haltbarkeit', [FridgeController::class, 'updateExpiry'])
+        ->middleware('can:update,item')->name('fridge.expiry');
 
     Route::get('/scan', [ScanController::class, 'index'])->name('scan.index');
     Route::post('/api/scan-barcode', [ScanController::class, 'lookup'])

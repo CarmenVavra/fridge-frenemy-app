@@ -60,7 +60,7 @@ class FridgeTest extends TestCase
             'barcode' => '4008400402222',
             'category' => 'Milchprodukte',
             'quantity' => 2,
-            'shelf_days' => 7,
+            'expires_at' => Carbon::today()->addDays(24)->toDateString(),
         ])->assertRedirect(route('fridge.index'))
             ->assertSessionHas('toast', 'Hüttenkäse eingelagert. Ich behalte es im Auge.');
 
@@ -68,7 +68,7 @@ class FridgeTest extends TestCase
         $this->assertSame('Hüttenkäse', $item->name);
         $this->assertSame(2, $item->quantity);
         $this->assertSame('Stück', $item->unit);
-        $this->assertTrue($item->expires_at->isSameDay(Carbon::today()->addDays(7)));
+        $this->assertTrue($item->expires_at->isSameDay(Carbon::today()->addDays(24)));
         $this->assertSame(FridgeItemStatus::Fresh, $item->status);
     }
 
@@ -77,11 +77,81 @@ class FridgeTest extends TestCase
         $this->actingAs($this->user)->post(route('fridge.store'), [
             'name' => '',
             'quantity' => 0,
-            'shelf_days' => -1,
+            'expires_at' => Carbon::yesterday()->toDateString(),
             'barcode' => 'abc',
-        ])->assertSessionHasErrors(['name', 'quantity', 'shelf_days', 'barcode']);
+        ])->assertSessionHasErrors(['name', 'quantity', 'expires_at', 'barcode']);
 
         $this->assertSame(0, FridgeItem::count());
+    }
+
+    public function test_storing_an_item_requires_a_real_date(): void
+    {
+        $this->actingAs($this->user)->post(route('fridge.store'), [
+            'name' => 'Sauerrahm',
+            'quantity' => 1,
+            'expires_at' => '03.11.2026',
+        ])->assertSessionHasErrors('expires_at');
+
+        $this->assertSame(0, FridgeItem::count());
+    }
+
+    public function test_expiry_date_of_an_item_can_be_changed(): void
+    {
+        $item = FridgeItem::factory()->for($this->household)->expiresIn(1)->create(['name' => 'Mascarpone']);
+        $this->assertSame(FridgeItemStatus::Warning, $item->status);
+
+        $this->actingAs($this->user)->patch(route('fridge.expiry', $item), [
+            'expires_at' => Carbon::today()->addDays(24)->toDateString(),
+        ])->assertRedirect(route('fridge.index'))
+            ->assertSessionHas('toast', 'Neues Datum für Mascarpone notiert. Ich vergesse nichts.');
+
+        $item->refresh();
+        $this->assertTrue($item->expires_at->isSameDay(Carbon::today()->addDays(24)));
+        $this->assertSame(FridgeItemStatus::Fresh, $item->status);
+    }
+
+    public function test_dashboard_offers_the_date_form(): void
+    {
+        $item = FridgeItem::factory()->for($this->household)->expiresIn(10)->create();
+
+        $this->actingAs($this->user)->get(route('fridge.index'))
+            ->assertOk()
+            // The card data is embedded via Js::from(), so the URL appears with escaped slashes.
+            ->assertSee(str_replace('/', '\\\\\/', route('fridge.expiry', $item)), false)
+            ->assertSee($item->expires_at->toDateString())
+            ->assertSee('name="expires_at"', false);
+    }
+
+    public function test_changing_the_expiry_date_validates_input(): void
+    {
+        $item = FridgeItem::factory()->for($this->household)->expiresIn(10)->create();
+
+        $this->actingAs($this->user)->from(route('fridge.index'))->patch(route('fridge.expiry', $item), [
+            'expires_at' => Carbon::yesterday()->toDateString(),
+        ])->assertRedirect(route('fridge.index'))
+            ->assertSessionHasErrors(['expires_at' => 'Das Datum liegt in der Vergangenheit. Dann ist es schon abgelaufen.']);
+
+        $this->assertTrue($item->fresh()?->expires_at->isSameDay(Carbon::today()->addDays(10)));
+    }
+
+    public function test_expiry_date_of_other_households_items_cannot_be_changed(): void
+    {
+        $foreign = FridgeItem::factory()->expiresIn(10)->create();
+
+        $this->actingAs($this->user)->patch(route('fridge.expiry', $foreign), [
+            'expires_at' => Carbon::today()->addDays(30)->toDateString(),
+        ])->assertForbidden();
+
+        $this->assertTrue($foreign->fresh()?->expires_at->isSameDay(Carbon::today()->addDays(10)));
+    }
+
+    public function test_expiry_date_of_a_resolved_item_cannot_be_changed(): void
+    {
+        $item = FridgeItem::factory()->for($this->household)->create(['status' => FridgeItemStatus::Consumed]);
+
+        $this->actingAs($this->user)->patch(route('fridge.expiry', $item), [
+            'expires_at' => Carbon::today()->addDays(30)->toDateString(),
+        ])->assertStatus(409);
     }
 
     public function test_consuming_an_item_increments_the_hero_counter(): void

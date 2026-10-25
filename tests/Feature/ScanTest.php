@@ -28,7 +28,9 @@ class ScanTest extends TestCase
             ->assertOk()
             ->assertSee('Neuer Verdächtiger')
             ->assertSee('Barcode scannen')
-            ->assertSee('Manuell eintragen');
+            ->assertSee('Manuell eintragen')
+            ->assertSee('name="expires_at" type="date"', false)
+            ->assertSee('Das Datum steht nicht im Barcode.');
     }
 
     public function test_barcode_lookup_returns_open_food_facts_product(): void

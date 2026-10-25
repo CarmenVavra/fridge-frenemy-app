@@ -32,9 +32,11 @@ class FridgeDashboardService
                 'meta' => trim($item->quantity.' '.$item->unit.($item->category ? ' · '.$item->category : '')),
                 'days' => $item->days_until_expiration,
                 'stage' => $item->urgency_stage,
+                'expires_on' => $item->expires_at->toDateString(),
                 'quote' => $tone->quote($item->name, $item->days_until_expiration),
                 'consume_url' => route('fridge.consume', $item),
                 'trash_url' => route('fridge.trash', $item),
+                'expiry_url' => route('fridge.expiry', $item),
             ])
             ->values()
             ->all();

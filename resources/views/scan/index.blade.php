@@ -7,7 +7,7 @@
             'name' => old('name'),
             'category' => old('category'),
             'quantity' => old('quantity'),
-            'shelf_days' => old('shelf_days'),
+            'expires_at' => old('expires_at'),
         ],
     ]) }})">
         <x-page-title kicker="Einlagern" title="Neuer Verdächtiger" class="pb-3.5" />
@@ -41,7 +41,7 @@
                 <button type="button" class="ff-btn-secondary" @click="manual()">Manuell eintragen</button>
             </div>
             <p class="mx-5 border-t-2 border-ink pt-3 text-xs leading-normal text-neutral-700">
-                Produktname und Kategorie kommen von Open Food Facts. Haltbarkeit startet bei +7 Tagen — du weißt es sowieso besser.
+                Produktname und Kategorie kommen von Open Food Facts. Das Ablaufdatum startet bei +7 Tagen. Trag das Datum von der Packung ein.
             </p>
         </div>
 
@@ -51,7 +51,6 @@
             <input type="hidden" name="barcode" :value="form.barcode">
             <input type="hidden" name="category" :value="form.category">
             <input type="hidden" name="quantity" :value="form.quantity">
-            <input type="hidden" name="shelf_days" :value="form.shelf">
 
             <div x-show="form.fromScan" class="flex items-center justify-between border-b-2 border-ink bg-surface px-5 py-3">
                 <span class="text-xs font-bold uppercase tracking-[.08em]">Treffer · Open Food Facts</span>
@@ -78,17 +77,14 @@
                         </div>
                         @error('quantity')<p class="ff-error">{{ $message }}</p>@enderror
                     </div>
-                    <div role="group" aria-labelledby="shelf-label">
-                        <p id="shelf-label" class="ff-label">Haltbar bis</p>
-                        <div class="grid grid-cols-[44px_1fr_44px] border-2 border-ink">
-                            <button type="button" class="ff-stepper-btn" @click="form.shelf = Math.max(0, form.shelf - 1)"
-                                    :disabled="form.shelf <= 0" aria-label="Einen Tag früher"><x-icon name="minus" :size="18" /></button>
-                            <output class="flex items-center justify-center text-sm font-bold" x-text="dateLabel" aria-live="polite"></output>
-                            <button type="button" class="ff-stepper-btn" @click="form.shelf++" aria-label="Einen Tag später"><x-icon name="plus" :size="18" /></button>
-                        </div>
-                        @error('shelf_days')<p class="ff-error">{{ $message }}</p>@enderror
+                    <div>
+                        <label for="expires_at" class="ff-label">Haltbar bis</label>
+                        <input id="expires_at" name="expires_at" type="date" class="ff-input" x-model="form.expires" :min="today" required
+                               aria-describedby="expires-hint" @error('expires_at') aria-invalid="true" @enderror>
+                        @error('expires_at')<p class="ff-error">{{ $message }}</p>@enderror
                     </div>
                 </div>
+                <p id="expires-hint" class="-mt-2 text-xs text-neutral-700">Das Datum steht nicht im Barcode. Schau auf die Packung.</p>
 
                 <p class="text-[13px] font-medium text-accent-700">Butler: „<span x-text="remark"></span>“</p>
 

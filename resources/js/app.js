@@ -19,6 +19,14 @@ const vibrate = (pattern) => {
     }
 };
 
+/** Local date in N days as YYYY-MM-DD, the value format of <input type="date">. */
+const isoDate = (days) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
 /* ------------------------------------------------------------------ */
 /* Global UI store: toast + push banner                                */
 /* ------------------------------------------------------------------ */
@@ -65,6 +73,7 @@ document.addEventListener('alpine:init', () => {
         filter: 'all',
         open: {},
         leaving: {},
+        today: isoDate(0),
 
         init() {
             if (config.alert) {
@@ -159,21 +168,19 @@ document.addEventListener('alpine:init', () => {
             name: config.old.name ?? '',
             category: config.old.category ?? 'Sonstiges',
             quantity: Number(config.old.quantity ?? 1),
-            shelf: Number(config.old.shelf_days ?? 7),
+            expires: config.old.expires_at ?? isoDate(7),
             fromScan: !!config.old.barcode,
         },
         notice: '',
 
-        get dateLabel() {
-            const date = new Date();
-            date.setDate(date.getDate() + this.form.shelf);
-            return date.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' });
-        },
+        today: isoDate(0),
 
         get remark() {
-            if (this.form.shelf <= 2) return 'Das ist kein Einlagern, das ist Aufschieben.';
-            if (this.form.shelf >= 14) return 'Optimistisch. Das gefällt mir.';
-            return 'Sieben Tage. Ich setze mir schon mal eine Erinnerung.';
+            const days = Math.round((new Date(this.form.expires) - new Date(this.today)) / 86400000);
+            if (Number.isNaN(days)) return 'Ohne Datum kann ich niemanden beschuldigen.';
+            if (days <= 2) return 'Das ist kein Einlagern, das ist Aufschieben.';
+            if (days >= 14) return 'Optimistisch. Das gefällt mir.';
+            return `${days} Tage. Ich setze mir schon mal eine Erinnerung.`;
         },
 
         async startScan() {
@@ -225,7 +232,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         fill({ barcode, name, category, fromScan }) {
-            this.form = { barcode, name, category, quantity: 1, shelf: 7, fromScan };
+            this.form = { barcode, name, category, quantity: 1, expires: isoDate(7), fromScan };
             this.phase = 'found';
             // Wait until x-show has revealed the form before focusing.
             setTimeout(() => this.$refs.name?.focus(), 50);
