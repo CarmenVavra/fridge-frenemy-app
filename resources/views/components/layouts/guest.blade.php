@@ -15,5 +15,11 @@
             @endif
             {{ $slot }}
         </main>
+        <footer class="flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink px-5 py-4">
+            @auth
+                <a href="{{ route('fridge.index') }}" class="text-[13px] font-bold text-accent-700 underline underline-offset-4 hover:text-accent-600">Zurück zur App</a>
+            @endauth
+            <x-legal-links />
+        </footer>
     </div>
 </x-layouts.base>

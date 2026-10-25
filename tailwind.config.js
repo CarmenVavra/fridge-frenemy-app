@@ -40,7 +40,7 @@ export default {
                 },
             },
             fontFamily: {
-                sans: ['Archivo', 'system-ui', 'sans-serif'],
+                sans: ['Archivo Variable', 'Archivo', 'system-ui', 'sans-serif'],
             },
             borderWidth: {
                 3: '3px',

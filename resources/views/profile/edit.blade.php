@@ -94,10 +94,11 @@
         </form>
     </section>
 
-    <section class="border-t-2 border-ink px-5 py-5">
+    <section class="flex flex-col gap-4 border-t-2 border-ink px-5 py-5">
         <form method="POST" action="{{ route('logout') }}">
             @csrf
             <button type="submit" class="ff-btn-ink"><x-icon name="log-out" />Abmelden</button>
         </form>
+        <x-legal-links />
     </section>
 </x-layouts.app>

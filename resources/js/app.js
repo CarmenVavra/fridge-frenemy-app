@@ -1,4 +1,5 @@
 import './bootstrap';
+import '@fontsource-variable/archivo';
 import Alpine from 'alpinejs';
 import confetti from 'canvas-confetti';
 

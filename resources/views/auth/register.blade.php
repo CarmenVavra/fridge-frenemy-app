@@ -49,6 +49,10 @@
             </div>
         </fieldset>
 
+        <p class="text-[13px] text-neutral-700">
+            Was mit deinen Daten passiert, steht in der
+            <a href="{{ route('legal.privacy') }}" class="font-semibold text-accent-700 underline underline-offset-4 hover:text-accent-600">Datenschutzerklärung</a>.
+        </p>
         <button type="submit" class="ff-btn-primary">Konto anlegen</button>
         <p class="border-t-2 border-ink pt-4 text-sm font-semibold">
             <a href="{{ route('login') }}" class="text-accent-700 underline underline-offset-4 hover:text-accent-600">Schon registriert? Anmelden</a>
