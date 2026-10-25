@@ -124,7 +124,8 @@ class FridgeTest extends TestCase
 
     public function test_items_of_other_households_cannot_be_changed(): void
     {
-        $foreign = FridgeItem::factory()->create();
+        // Fester Abstand: bei 1-2 Tagen setzt das Model den Status sonst auf "warning".
+        $foreign = FridgeItem::factory()->expiresIn(10)->create();
 
         $this->actingAs($this->user)->patchJson(route('fridge.trash', $foreign))->assertForbidden();
         $this->assertSame(FridgeItemStatus::Fresh, $foreign->fresh()?->status);

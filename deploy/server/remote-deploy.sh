@@ -46,9 +46,10 @@ mkdir -p "$RELEASE_DIR"
 tar -xzf "$ARCHIVE" -C "$RELEASE_DIR"
 rm -f "$ARCHIVE"
 
+# Relative Links: Die SSH-Shell bei netcup ist chrooted und sieht andere absolute Pfade als der Webserver.
 rm -rf "$RELEASE_DIR/storage"
-ln -s "$BASE/shared/storage" "$RELEASE_DIR/storage"
-ln -sfn "$BASE/shared/.env" "$RELEASE_DIR/.env"
+ln -s "../../shared/storage" "$RELEASE_DIR/storage"
+ln -sfn "../../shared/.env" "$RELEASE_DIR/.env"
 mkdir -p "$RELEASE_DIR/bootstrap/cache"
 
 cd "$RELEASE_DIR"
@@ -65,8 +66,11 @@ trap 'echo "[FEHLER] Deployment abgebrochen - altes Release bleibt aktiv." >&2; 
 log "Migrationen"
 "$PHP" artisan migrate --force
 
+# Kein config:cache/view:cache: Die wuerden die Chroot-Pfade der SSH-Shell fest einbacken.
 log "Caches"
-"$PHP" artisan optimize
+"$PHP" artisan optimize:clear
+"$PHP" artisan route:cache
+"$PHP" artisan event:cache
 
 # --- Umschalten (atomar) ----------------------------------------------------
 log "Aktiviere Release"
