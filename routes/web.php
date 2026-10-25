@@ -40,6 +40,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/scan', [ScanController::class, 'index'])->name('scan.index');
     Route::post('/api/scan-barcode', [ScanController::class, 'lookup'])
         ->middleware('throttle:30,1')->name('scan.lookup');
+    Route::post('/api/datum-erkennen', [ScanController::class, 'detectDate'])
+        ->middleware('throttle:120,1')->name('scan.date');
 
     Route::get('/butler', [ButlerController::class, 'index'])->name('butler.index');
     Route::put('/butler/tonalitaet', [ButlerController::class, 'updateTone'])->name('butler.tone');

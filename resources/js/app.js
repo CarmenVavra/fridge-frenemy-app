@@ -28,6 +28,66 @@ const isoDate = (days) => {
 };
 
 /* ------------------------------------------------------------------ */
+/* Date scanner (OCR)                                                  */
+/* ------------------------------------------------------------------ */
+
+/** One shared Tesseract worker, created on first use (the model is a few MB). */
+let ocrWorker = null;
+
+const getOcrWorker = () => {
+    ocrWorker ??= (async () => {
+        const { createWorker, OEM, PSM } = await import('tesseract.js');
+        // Production serves the engine from /build (see vite.config.js); dev uses the CDN default.
+        const paths = __TESSERACT_BASE__
+            ? { workerPath: `${__TESSERACT_BASE__}/worker.min.js`, corePath: __TESSERACT_BASE__, langPath: __TESSERACT_BASE__ }
+            : {};
+        const worker = await createWorker('eng', OEM.LSTM_ONLY, paths);
+        await worker.setParameters({
+            // Digits and separators only; the space keeps a date apart from a lot number next to it.
+            tessedit_char_whitelist: '0123456789./- ',
+            preserve_interword_spaces: '1',
+            tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+        });
+        return worker;
+    })().catch((error) => {
+        ocrWorker = null;
+        throw error;
+    });
+
+    return ocrWorker;
+};
+
+/**
+ * Copies the part of the video under the on-screen frame into a canvas,
+ * enlarged and in high contrast. Every other frame is slightly blurred,
+ * which joins the dots of dot-matrix printed dates.
+ */
+const cropForOcr = (video, frame, blur) => {
+    const v = video.getBoundingClientRect();
+    const f = frame.getBoundingClientRect();
+    // The video uses object-fit: cover, so map screen pixels back to video pixels.
+    const scale = Math.max(v.width / video.videoWidth, v.height / video.videoHeight);
+    const offsetX = (v.width - video.videoWidth * scale) / 2;
+    const offsetY = (v.height - video.videoHeight * scale) / 2;
+    const sx = (f.left - v.left - offsetX) / scale;
+    const sy = (f.top - v.top - offsetY) / scale;
+    const sw = f.width / scale;
+    const sh = f.height / scale;
+    const zoom = Math.min(2, 1400 / sw);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(sw * zoom);
+    canvas.height = Math.round(sh * zoom);
+    const ctx = canvas.getContext('2d');
+    ctx.filter = `grayscale(1) contrast(1.8)${blur ? ' blur(1px)' : ''}`;
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+    return canvas;
+};
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/* ------------------------------------------------------------------ */
 /* Global UI store: toast + push banner                                */
 /* ------------------------------------------------------------------ */
 document.addEventListener('alpine:init', () => {
@@ -173,10 +233,32 @@ document.addEventListener('alpine:init', () => {
             quantity: Number(config.old.quantity ?? 1),
             expires: config.old.expires_at ?? isoDate(7),
             fromScan: !!config.old.barcode,
+            source: null, // memory | openfoodfacts | null
+            expiresSource: config.old.expires_at ? 'manual' : 'default', // default | memory | code | ocr | manual
+            rememberedDays: null,
         },
         notice: '',
+        dateScan: { active: false, status: '' },
+        dateStream: null,
 
         today: isoDate(0),
+
+        get hitLabel() {
+            return this.form.source === 'memory' ? 'Treffer · Schon mal gekauft' : 'Treffer · Open Food Facts';
+        },
+
+        get expiryHint() {
+            switch (this.form.expiresSource) {
+                case 'code':
+                    return 'Datum aus dem Code gelesen. Prüf es trotzdem kurz.';
+                case 'ocr':
+                    return 'Datum von der Packung gelesen. Prüf es lieber nochmal.';
+                case 'memory':
+                    return `Letztes Mal hielt es ${this.form.rememberedDays} ${this.form.rememberedDays === 1 ? 'Tag' : 'Tage'}. Ich hab's mir gemerkt.`;
+                default:
+                    return 'Das Datum steht nicht im Barcode. Scann es von der Packung oder tipp es ein.';
+            }
+        },
 
         get remark() {
             const days = Math.round((new Date(this.form.expires) - new Date(this.today)) / 86400000);
@@ -194,7 +276,8 @@ document.addEventListener('alpine:init', () => {
             try {
                 const { Html5Qrcode, Html5QrcodeSupportedFormats: F } = await import('html5-qrcode');
                 this.scanner = new Html5Qrcode('ff-reader', {
-                    formatsToSupport: [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128],
+                    // QR and DataMatrix: newer GS1 codes that can carry the expiry date.
+                    formatsToSupport: [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.QR_CODE, F.DATA_MATRIX],
                     verbose: false,
                 });
                 await this.scanner.start(
@@ -227,18 +310,104 @@ document.addEventListener('alpine:init', () => {
 
             try {
                 const { data } = await window.axios.post(config.lookupUrl, { barcode: code });
-                this.fill({ barcode: data.barcode, name: data.name, category: data.category, fromScan: true });
+                this.fill({ ...data, fromScan: true });
             } catch (error) {
-                this.fill({ barcode: /^\d{6,14}$/.test(code) ? code : '', name: '', category: 'Sonstiges', fromScan: true });
-                this.notice = error.response?.data?.message ?? 'Open Food Facts schweigt. Trag es selbst ein.';
+                const data = error.response?.data ?? {};
+                // 404 still carries the cleaned-up barcode and any date from a GS1 code.
+                this.fill({
+                    barcode: data.barcode ?? (/^\d{6,14}$/.test(code) ? code : ''),
+                    expires_at: data.expires_at,
+                    fromScan: true,
+                });
+                this.notice = data.message ?? data.errors?.barcode?.[0] ?? 'Open Food Facts schweigt. Trag es selbst ein.';
             }
         },
 
-        fill({ barcode, name, category, fromScan }) {
-            this.form = { barcode, name, category, quantity: 1, expires: isoDate(7), fromScan };
+        fill({ barcode, name = '', category = 'Sonstiges', fromScan, source = null, expires_at = null, remembered_days = null }) {
+            // Priority: date printed in the code > what this household entered last time > one week.
+            const expiresSource = expires_at ? 'code' : remembered_days ? 'memory' : 'default';
+            const expires = expires_at ?? isoDate(remembered_days ?? 7);
+
+            this.form = { barcode, name, category, quantity: 1, expires, fromScan, source, expiresSource, rememberedDays: remembered_days };
             this.phase = 'found';
             // Wait until x-show has revealed the form before focusing.
             setTimeout(() => this.$refs.name?.focus(), 50);
+        },
+
+        async startDateScan() {
+            if (this.dateScan.active) return;
+            this.notice = '';
+            this.dateScan = { active: true, status: 'Kamera startet …' };
+
+            try {
+                this.dateStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false,
+                });
+                const video = this.$refs.dateVideo;
+                video.srcObject = this.dateStream;
+                await video.play();
+            } catch {
+                this.stopDateScan();
+                this.notice = 'Keine Kamera verfügbar (oder keine Erlaubnis). Dann tipp das Datum ein.';
+                return;
+            }
+
+            let worker;
+            try {
+                this.dateScan.status = 'Lade Texterkennung …';
+                worker = await getOcrWorker();
+            } catch {
+                this.stopDateScan();
+                this.notice = 'Die Texterkennung lädt nicht. Tipp das Datum lieber ein.';
+                return;
+            }
+
+            const started = Date.now();
+            let round = 0;
+            this.dateScan.status = 'Halte das Datum in den Rahmen …';
+
+            while (this.dateScan.active) {
+                const video = this.$refs.dateVideo;
+                if (video?.readyState >= 2) {
+                    let text = '';
+                    try {
+                        ({ data: { text } } = await worker.recognize(cropForOcr(video, this.$refs.dateFrame, round++ % 2 === 1)));
+                    } catch {
+                        // A single unreadable frame is no reason to give up.
+                    }
+                    if (!this.dateScan.active) break;
+
+                    if ((text.match(/\d/g) ?? []).length >= 4 && (await this.applyOcrText(text))) break;
+                }
+
+                if (Date.now() - started > 20000) {
+                    this.dateScan.status = 'Schwer zu lesen. Mehr Licht, etwas näher ran – oder tipp es ein.';
+                }
+                await sleep(150);
+            }
+        },
+
+        async applyOcrText(text) {
+            try {
+                const { data } = await window.axios.post(config.dateUrl, { text });
+                if (!data.found) return false;
+
+                this.form.expires = data.expires_at;
+                this.form.expiresSource = 'ocr';
+                vibrate(60);
+                this.stopDateScan();
+                this.$store.ui.toast('Datum erkannt. Ich hab ein Auge drauf.');
+                return true;
+            } catch {
+                return false;
+            }
+        },
+
+        stopDateScan() {
+            this.dateScan = { active: false, status: '' };
+            this.dateStream?.getTracks().forEach((track) => track.stop());
+            this.dateStream = null;
         },
 
         manual() {
@@ -248,12 +417,14 @@ document.addEventListener('alpine:init', () => {
 
         async cancel() {
             await this.stopScanner();
+            this.stopDateScan();
             this.notice = '';
             this.phase = 'idle';
         },
 
         destroy() {
             this.stopScanner();
+            this.stopDateScan();
         },
     }));
 

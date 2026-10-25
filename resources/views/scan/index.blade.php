@@ -1,6 +1,7 @@
 <x-layouts.app title="Scan">
     <div x-data="scanPage({{ Js::from([
         'lookupUrl' => route('scan.lookup'),
+        'dateUrl' => route('scan.date'),
         'phase' => $errors->any() ? 'found' : 'idle',
         'old' => [
             'barcode' => old('barcode'),
@@ -41,7 +42,8 @@
                 <button type="button" class="ff-btn-secondary" @click="manual()">Manuell eintragen</button>
             </div>
             <p class="mx-5 border-t-2 border-ink pt-3 text-xs leading-normal text-neutral-700">
-                Produktname und Kategorie kommen von Open Food Facts. Das Ablaufdatum startet bei +7 Tagen. Trag das Datum von der Packung ein.
+                Produktname und Kategorie kommen von Open Food Facts, oder von dir, wenn du das Produkt schon mal hattest.
+                Das Ablaufdatum liest die App aus neuen QR- und DataMatrix-Codes oder scannt es von der Packung.
             </p>
         </div>
 
@@ -53,7 +55,7 @@
             <input type="hidden" name="quantity" :value="form.quantity">
 
             <div x-show="form.fromScan" class="flex items-center justify-between border-b-2 border-ink bg-surface px-5 py-3">
-                <span class="text-xs font-bold uppercase tracking-[.08em]">Treffer · Open Food Facts</span>
+                <span class="text-xs font-bold uppercase tracking-[.08em]" x-text="hitLabel">Treffer · Open Food Facts</span>
                 <span class="text-xs font-semibold tabular-nums text-neutral-700" x-text="form.barcode"></span>
             </div>
 
@@ -80,11 +82,29 @@
                     <div>
                         <label for="expires_at" class="ff-label">Haltbar bis</label>
                         <input id="expires_at" name="expires_at" type="date" class="ff-input" x-model="form.expires" :min="today" required
+                               @input="form.expiresSource = 'manual'"
                                aria-describedby="expires-hint" @error('expires_at') aria-invalid="true" @enderror>
                         @error('expires_at')<p class="ff-error">{{ $message }}</p>@enderror
                     </div>
                 </div>
-                <p id="expires-hint" class="-mt-2 text-xs text-neutral-700">Das Datum steht nicht im Barcode. Schau auf die Packung.</p>
+                <p id="expires-hint" class="-mt-2 text-xs text-neutral-700" x-show="form.expiresSource !== 'manual'" x-text="expiryHint" aria-live="polite">
+                    Das Datum steht nicht im Barcode. Scann es von der Packung oder tipp es ein.
+                </p>
+
+                {{-- Date scanner (OCR, runs on the device) --}}
+                <div>
+                    <button type="button" class="ff-btn-secondary" @click="startDateScan()" x-show="!dateScan.active">
+                        <x-icon name="camera" />Datum von der Packung scannen
+                    </button>
+                    <div x-show="dateScan.active" x-cloak class="border-2 border-ink">
+                        <div class="relative h-[200px] overflow-hidden bg-ink">
+                            <video x-ref="dateVideo" class="absolute inset-0 h-full w-full object-cover" playsinline muted aria-hidden="true"></video>
+                            <div x-ref="dateFrame" class="pointer-events-none absolute inset-x-6 top-1/2 h-[64px] -translate-y-1/2 border-3 border-accent shadow-[0_0_0_999px_rgba(32,30,29,.55)]"></div>
+                        </div>
+                        <p class="bg-surface px-4 py-2.5 text-[13px] font-semibold" role="status" aria-live="polite" x-text="dateScan.status"></p>
+                        <button type="button" class="ff-btn-secondary border-x-0 border-b-0" @click="stopDateScan()">Datums-Scan abbrechen</button>
+                    </div>
+                </div>
 
                 <p class="text-[13px] font-medium text-accent-700">Butler: „<span x-text="remark"></span>“</p>
 
