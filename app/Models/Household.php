@@ -75,6 +75,16 @@ class Household extends Model
     }
 
     /**
+     * Replaces the invite code, so the old one can no longer be used to join.
+     */
+    public function regenerateInviteCode(): string
+    {
+        $this->update(['invite_code' => self::generateInviteCode()]);
+
+        return $this->invite_code;
+    }
+
+    /**
      * @return HasMany<User, $this>
      */
     public function users(): HasMany

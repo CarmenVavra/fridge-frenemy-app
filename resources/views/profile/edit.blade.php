@@ -26,9 +26,45 @@
             <p class="text-xs font-bold uppercase tracking-[.08em]">Einladungscode</p>
             <p class="mt-1 text-[28px] font-extrabold tracking-[.12em]">{{ $household->invite_code }}</p>
             <p class="mt-1 text-[13px] font-medium text-neutral-700">
-                Mitbewohner:innen geben diesen Code bei der Registrierung ein. Aktuell {{ $household->users_count }} {{ $household->users_count === 1 ? 'Mitglied' : 'Mitglieder' }}.
+                Mitbewohner:innen geben diesen Code bei der Registrierung oder hier im Profil unter „Anderem Haushalt beitreten“ ein. Aktuell {{ $household->users_count }} {{ $household->users_count === 1 ? 'Mitglied' : 'Mitglieder' }}.
             </p>
+            <form method="POST" action="{{ route('profile.invite-code') }}" class="mt-3">
+                @csrf
+                <button type="submit" class="ff-btn-secondary" aria-describedby="invite-code-regenerate-hint">Neuen Code erzeugen</button>
+                <p id="invite-code-regenerate-hint" class="mt-1.5 text-xs text-neutral-700">Der alte Code funktioniert danach nicht mehr. Wer schon drin ist, bleibt drin.</p>
+            </form>
         </div>
+    </section>
+
+    {{-- Join another household --}}
+    <section class="border-t-2 border-ink px-5 py-5" aria-labelledby="join-title">
+        <h2 id="join-title" class="ff-kicker text-accent-700">Anderem Haushalt beitreten</h2>
+        <form method="POST" action="{{ route('profile.join') }}" class="mt-3 flex flex-col gap-3">
+            @csrf
+            <div>
+                <label for="join-invite-code" class="ff-label">Einladungscode</label>
+                <input id="join-invite-code" name="invite_code" type="text" class="ff-input uppercase tracking-[.12em]" maxlength="12" required autocomplete="off"
+                       value="{{ old('invite_code') }}"
+                       @error('invite_code') aria-invalid="true" aria-describedby="join-invite-code-error" @enderror>
+                @error('invite_code')<p id="join-invite-code-error" class="ff-error">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label class="flex items-start gap-2.5 text-[13px] font-medium leading-[1.4]">
+                    <input type="checkbox" name="confirm_leave" value="1" required class="mt-0.5 size-5 flex-none accent-accent"
+                           @error('confirm_leave') aria-invalid="true" aria-describedby="confirm-leave-error" @enderror>
+                    <span>
+                        Ich verlasse „{{ $household->name }}“.
+                        @if ($household->users_count === 1)
+                            <strong class="text-accent-700">Du bist das einzige Mitglied: Dein bisheriger Kühlschrank wird mit allen Artikeln und Zählern gelöscht.</strong>
+                        @else
+                            Die anderen Mitglieder und alle Artikel bleiben dort.
+                        @endif
+                    </span>
+                </label>
+                @error('confirm_leave')<p id="confirm-leave-error" class="ff-error">{{ $message }}</p>@enderror
+            </div>
+            <button type="submit" class="ff-btn-secondary">Beitreten</button>
+        </form>
     </section>
 
     {{-- Password --}}

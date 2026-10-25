@@ -53,6 +53,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil/passwort', [ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::put('/profil/haushalt', [ProfileController::class, 'updateHousehold'])->name('profile.household');
+    Route::post('/profil/haushalt/neuer-code', [ProfileController::class, 'regenerateInviteCode'])
+        ->middleware('throttle:10,1')->name('profile.invite-code');
+    Route::post('/profil/haushalt/beitreten', [ProfileController::class, 'joinHousehold'])
+        ->middleware('throttle:10,1')->name('profile.join');
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
