@@ -101,7 +101,9 @@ try {
     # --- 4. Hochladen + aktivieren -----------------------------------------
     Step "Lade auf $SshHost hoch"
     Run 'ssh' ($SshArgs + @($Remote, "mkdir -p '$RemoteBase/uploads'"))
-    Run 'scp' ($ScpArgs + @($Archive, (Join-Path $PSScriptRoot 'server\remote-deploy.sh'), "${Remote}:$RemoteBase/uploads/"))
+    # Zieldateinamen explizit angeben: MSYS-scp (Git Bash) uebernimmt sonst den kompletten Windows-Pfad als Namen.
+    Run 'scp' ($ScpArgs + @($Archive, "${Remote}:$RemoteBase/uploads/fridge-frenemy-$Release.tgz"))
+    Run 'scp' ($ScpArgs + @((Join-Path $PSScriptRoot 'server\remote-deploy.sh'), "${Remote}:$RemoteBase/uploads/remote-deploy.sh"))
 
     Step 'Aktiviere Release auf dem Server'
     $remoteCmd = "sed -i 's/\r`$//' '$RemoteBase/uploads/remote-deploy.sh' && " +

@@ -26,7 +26,10 @@ Copy-Item (Join-Path $Root '.env.production.example') $envTmp -Force
 & ssh -p $SshPort $Remote "mkdir -p '$RemoteBase/uploads'"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-& scp -P $SshPort $envTmp (Join-Path $PSScriptRoot 'server\remote-setup.sh') "${Remote}:$RemoteBase/uploads/"
+# Zieldateinamen explizit angeben: MSYS-scp (Git Bash) uebernimmt sonst den kompletten Windows-Pfad als Namen.
+& scp -P $SshPort $envTmp "${Remote}:$RemoteBase/uploads/env.production"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& scp -P $SshPort (Join-Path $PSScriptRoot 'server\remote-setup.sh') "${Remote}:$RemoteBase/uploads/remote-setup.sh"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Remove-Item $envTmp
 

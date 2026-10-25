@@ -19,8 +19,9 @@ mkdir -p "$BASE/releases" "$BASE/uploads" \
 chmod -R u+rwX "$BASE/shared/storage"
 
 if [ ! -f "$BASE/shared/.env" ]; then
+    # Chroot-Shells bei netcup haben kein base64, PHP ist aber immer da.
+    KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));')"
     cp "$BASE/uploads/env.production" "$BASE/shared/.env"
-    KEY="base64:$(head -c 32 /dev/urandom | base64)"
     sed -i "s|^APP_KEY=.*|APP_KEY=$KEY|" "$BASE/shared/.env"
     chmod 600 "$BASE/shared/.env"
     echo "  -> $BASE/shared/.env angelegt (APP_KEY generiert)."
