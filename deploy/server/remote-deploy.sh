@@ -70,6 +70,11 @@ log "Caches"
 
 # --- Umschalten (atomar) ----------------------------------------------------
 log "Aktiviere Release"
+# Plesk legt den Document Root beim Speichern der Hosting-Einstellungen als echten Ordner an.
+# Den zur Seite schieben (nicht loeschen), damit "current" ein Symlink werden kann.
+if [ -d "$BASE/current" ] && [ ! -L "$BASE/current" ]; then
+    mv "$BASE/current" "$BASE/current.plesk-$(date +%Y%m%d-%H%M%S)"
+fi
 ln -sfn "releases/$RELEASE" "$BASE/current.tmp"
 mv -Tf "$BASE/current.tmp" "$BASE/current"
 
