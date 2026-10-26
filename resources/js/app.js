@@ -314,12 +314,10 @@ document.addEventListener('alpine:init', () => {
                 });
                 await this.scanner.start(
                     { facingMode: 'environment' },
-                    {
-                        fps: 10,
-                        qrbox: { width: 260, height: 140 },
-                        // Without a size, Safari delivers 640×480: too coarse for the thin bars of an EAN code.
-                        videoConstraints: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
-                    },
+                    // No resolution constraints: on phones with several rear cameras they can make the
+                    // browser pick a lens that cannot focus up close, and html5-qrcode scales every
+                    // frame down to the qrbox anyway.
+                    { fps: 10, qrbox: { width: 260, height: 140 } },
                     (code) => this.onDecoded(code),
                     () => {},
                 );
