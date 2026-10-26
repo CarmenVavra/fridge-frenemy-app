@@ -29,6 +29,36 @@ const isoDate = (days) => {
 };
 
 /* ------------------------------------------------------------------ */
+/* Barcode reader                                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Safari (iPhone, iPad) and desktop Firefox have no native BarcodeDetector.
+ * html5-qrcode would then fall back to its JavaScript decoder, which rarely
+ * reads an EAN code from a phone camera. zxing-wasm fills the gap, and
+ * html5-qrcode picks it up like the native detector. If the WebAssembly file
+ * does not load, the JavaScript decoder stays as the fallback.
+ */
+let barcodeDetectorReady = null;
+
+const ensureBarcodeDetector = () => {
+    barcodeDetectorReady ??= (async () => {
+        if ('BarcodeDetector' in window) return;
+        const { BarcodeDetector, prepareZXingModule } = await import('barcode-detector/ponyfill');
+        // Production serves the WebAssembly file from /build (see vite.config.js); dev uses the CDN default.
+        const overrides = __ZXING_BASE__
+            ? { locateFile: (path, prefix) => (path.endsWith('.wasm') ? `${__ZXING_BASE__}/${path}` : prefix + path) }
+            : {};
+        await prepareZXingModule({ overrides, fireImmediately: true });
+        window.BarcodeDetector = BarcodeDetector;
+    })().catch(() => {
+        barcodeDetectorReady = null;
+    });
+
+    return barcodeDetectorReady;
+};
+
+/* ------------------------------------------------------------------ */
 /* Date scanner (OCR)                                                  */
 /* ------------------------------------------------------------------ */
 
@@ -275,15 +305,21 @@ document.addEventListener('alpine:init', () => {
             this.phase = 'scanning';
 
             try {
-                const { Html5Qrcode, Html5QrcodeSupportedFormats: F } = await import('html5-qrcode');
+                const [{ Html5Qrcode, Html5QrcodeSupportedFormats: F }] = await Promise.all([import('html5-qrcode'), ensureBarcodeDetector()]);
                 this.scanner = new Html5Qrcode('ff-reader', {
                     // QR and DataMatrix: newer GS1 codes that can carry the expiry date.
                     formatsToSupport: [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.QR_CODE, F.DATA_MATRIX],
+                    useBarCodeDetectorIfSupported: true,
                     verbose: false,
                 });
                 await this.scanner.start(
                     { facingMode: 'environment' },
-                    { fps: 10, qrbox: { width: 260, height: 140 } },
+                    {
+                        fps: 10,
+                        qrbox: { width: 260, height: 140 },
+                        // Without a size, Safari delivers 640×480: too coarse for the thin bars of an EAN code.
+                        videoConstraints: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    },
                     (code) => this.onDecoded(code),
                     () => {},
                 );

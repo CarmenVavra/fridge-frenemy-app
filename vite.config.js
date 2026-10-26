@@ -1,11 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 
 const require = createRequire(import.meta.url);
 const tesseractVersion = require('tesseract.js/package.json').version;
 const tesseractDir = `tesseract/${tesseractVersion}`;
+const zxingWasm = require.resolve('zxing-wasm/reader/zxing_reader.wasm');
+// zxing-wasm does not export its package.json; it sits two levels above dist/reader.
+const zxingVersion = JSON.parse(readFileSync(new URL('../../package.json', pathToFileURL(zxingWasm)))).version;
+const zxingDir = `zxing/${zxingVersion}`;
 
 /**
  * Self-hosts the OCR engine for the date scanner in production builds:
@@ -34,6 +39,25 @@ function tesseractAssets() {
     };
 }
 
+/**
+ * Self-hosts the WebAssembly barcode reader for browsers without a native
+ * BarcodeDetector (Safari on iPhone and iPad). Same idea as above: no CDN,
+ * versioned folder. In `npm run dev` zxing-wasm falls back to jsDelivr.
+ */
+function zxingAssets() {
+    return {
+        name: 'zxing-assets',
+        apply: 'build',
+        generateBundle() {
+            this.emitFile({
+                type: 'asset',
+                fileName: `${zxingDir}/zxing_reader.wasm`,
+                source: readFileSync(zxingWasm),
+            });
+        },
+    };
+}
+
 export default defineConfig(({ command }) => ({
     plugins: [
         laravel({
@@ -41,9 +65,11 @@ export default defineConfig(({ command }) => ({
             refresh: true,
         }),
         tesseractAssets(),
+        zxingAssets(),
     ],
     define: {
         __TESSERACT_BASE__: JSON.stringify(command === 'build' ? `/build/${tesseractDir}` : null),
+        __ZXING_BASE__: JSON.stringify(command === 'build' ? `/build/${zxingDir}` : null),
     },
     server: {
         host: 'localhost',
