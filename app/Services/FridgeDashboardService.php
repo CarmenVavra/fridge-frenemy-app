@@ -15,7 +15,7 @@ class FridgeDashboardService
     /**
      * Active items of the household as plain arrays, sorted by days left.
      *
-     * @return list<array{id: string, name: string, meta: string, days: int, stage: int, quote: string|null, consume_url: string, trash_url: string}>
+     * @return list<array{id: string, name: string, meta: string, quantity: int, days: int, stage: int, quote: string|null, consume_url: string, trash_url: string}>
      */
     public function cards(Household $household): array
     {
@@ -29,7 +29,8 @@ class FridgeDashboardService
             ->map(fn (FridgeItem $item): array => [
                 'id' => $item->id,
                 'name' => $item->name,
-                'meta' => trim($item->quantity.' '.$item->unit.($item->category ? ' · '.$item->category : '')),
+                'meta' => $item->details,
+                'quantity' => $item->quantity,
                 'days' => $item->days_until_expiration,
                 'stage' => $item->urgency_stage,
                 'expires_on' => $item->expires_at->toDateString(),

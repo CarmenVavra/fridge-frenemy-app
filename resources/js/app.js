@@ -233,10 +233,20 @@ document.addEventListener('alpine:init', () => {
                 });
             }
 
-            this.leaving[item.id] = kind;
+            // Only the last piece animates the card away; 'busy' just blocks double taps.
+            this.leaving[item.id] = item.quantity > 1 ? 'busy' : kind;
 
             try {
                 const { data } = await window.axios.patch(kind === 'eat' ? item.consume_url : item.trash_url);
+                if (data.remaining > 0) {
+                    // Only one piece booked: the card stays with the new quantity.
+                    delete this.leaving[item.id];
+                    Object.assign(item, { quantity: data.remaining, meta: data.meta });
+                    this.saved = data.saved;
+                    this.trashed = data.trashed;
+                    this.$store.ui.toast(data.toast);
+                    return;
+                }
                 setTimeout(() => {
                     this.items = this.items.filter((i) => i.id !== item.id);
                     delete this.leaving[item.id];

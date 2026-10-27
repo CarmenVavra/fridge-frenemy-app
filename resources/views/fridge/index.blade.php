@@ -131,13 +131,13 @@
                     <div x-show="isOpen(item)" class="grid grid-cols-2 border-b-2 border-ink">
                         <button type="button" @click.stop="act(item, 'eat', $event)"
                                 class="flex cursor-pointer items-center gap-2.5 border-r-2 border-ink bg-ink px-5 py-3.5 text-left text-sm font-bold text-white hover:bg-neutral-800"
-                                :aria-label="item.name + ' aufgegessen'">
-                            <x-icon name="utensils" :size="18" />Aufgegessen
+                                :aria-label="(item.quantity > 1 ? 'Ein Stück ' : '') + item.name + ' aufgegessen'">
+                            <x-icon name="utensils" :size="18" /><span x-text="item.quantity > 1 ? '1 aufgegessen' : 'Aufgegessen'">Aufgegessen</span>
                         </button>
                         <button type="button" @click.stop="act(item, 'trash', $event)"
                                 class="flex cursor-pointer items-center gap-2.5 bg-accent px-5 py-3.5 text-left text-sm font-bold text-white hover:bg-accent-600"
-                                :aria-label="item.name + ' weggeworfen'">
-                            <x-icon name="trash-2" :size="18" />Weggeworfen
+                                :aria-label="(item.quantity > 1 ? 'Ein Stück ' : '') + item.name + ' weggeworfen'">
+                            <x-icon name="trash-2" :size="18" /><span x-text="item.quantity > 1 ? '1 weggeworfen' : 'Weggeworfen'">Weggeworfen</span>
                         </button>
                         <form method="POST" :action="item.expiry_url" class="col-span-2 flex items-end gap-2 border-t-2 border-ink px-5 py-3">
                             @csrf

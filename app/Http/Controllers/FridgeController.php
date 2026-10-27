@@ -61,24 +61,31 @@ class FridgeController extends Controller
 
     public function consume(Request $request, FridgeItem $item, ResolveFridgeItem $resolve): JsonResponse|RedirectResponse
     {
-        return $this->resolve($request, $item, $resolve, FridgeItemStatus::Consumed, 'Gerettet. Der Kühlschrank ist fast stolz.');
+        return $this->resolve($request, $item, $resolve, FridgeItemStatus::Consumed, 'Gerettet. Der Kühlschrank ist fast stolz.', 'Eins gerettet, :count übrig. Der Kühlschrank zählt mit.');
     }
 
     public function trash(Request $request, FridgeItem $item, ResolveFridgeItem $resolve): JsonResponse|RedirectResponse
     {
-        return $this->resolve($request, $item, $resolve, FridgeItemStatus::Trashed, 'Verbucht. Der Schuld-Counter dankt dir.');
+        return $this->resolve($request, $item, $resolve, FridgeItemStatus::Trashed, 'Verbucht. Der Schuld-Counter dankt dir.', 'Eins weg, :count übrig. Der Schuld-Counter dankt dir.');
     }
 
-    private function resolve(Request $request, FridgeItem $item, ResolveFridgeItem $resolve, FridgeItemStatus $outcome, string $toast): JsonResponse|RedirectResponse
+    /**
+     * Books one piece; $partialToast is used while pieces are left (":count" = how many).
+     */
+    private function resolve(Request $request, FridgeItem $item, ResolveFridgeItem $resolve, FridgeItemStatus $outcome, string $toast, string $partialToast): JsonResponse|RedirectResponse
     {
         abort_if($item->status->isResolved(), 409, 'Dieser Artikel ist bereits erledigt.');
 
         $stats = $resolve->handle($item, $outcome);
+        $remaining = $item->wasChanged('status') ? 0 : $item->quantity;
+        $toast = $remaining > 0 ? str_replace(':count', (string) $remaining, $partialToast) : $toast;
 
         if ($request->expectsJson()) {
             return response()->json([
                 'saved' => $stats->saved_count,
                 'trashed' => $stats->trashed_count,
+                'remaining' => $remaining,
+                'meta' => $item->details,
                 'toast' => $toast,
             ]);
         }

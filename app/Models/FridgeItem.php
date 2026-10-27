@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property FridgeItemStatus $status
  * @property int $annoyance_level
  * @property-read int $days_until_expiration
+ * @property-read string $details
  * @property-read int $urgency_stage
  */
 class FridgeItem extends Model
@@ -112,6 +113,18 @@ class FridgeItem extends Model
     {
         return Attribute::get(
             fn (): int => (int) Carbon::today()->diffInDays($this->expires_at->copy()->startOfDay(), false)
+        );
+    }
+
+    /**
+     * Quantity, unit and category for the card, e.g. "2 Stück · Milchprodukte".
+     *
+     * @return Attribute<string, never>
+     */
+    protected function details(): Attribute
+    {
+        return Attribute::get(
+            fn (): string => trim($this->quantity.' '.$this->unit.($this->category ? ' · '.$this->category : ''))
         );
     }
 

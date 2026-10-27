@@ -176,6 +176,38 @@ class FridgeTest extends TestCase
         $this->assertSame(FridgeItemStatus::Trashed, $item->fresh()?->status);
     }
 
+    public function test_consuming_one_of_several_pieces_keeps_the_rest(): void
+    {
+        $item = FridgeItem::factory()->for($this->household)->expiresIn(10)->create(['name' => 'Kaffeejoghurt', 'quantity' => 2, 'category' => null]);
+
+        $this->actingAs($this->user)->patchJson(route('fridge.consume', $item))
+            ->assertOk()
+            ->assertJson([
+                'saved' => 1,
+                'trashed' => 0,
+                'remaining' => 1,
+                'meta' => '1 Stück',
+                'toast' => 'Eins gerettet, 1 übrig. Der Kühlschrank zählt mit.',
+            ]);
+
+        $item->refresh();
+        $this->assertSame(1, $item->quantity);
+        $this->assertSame(FridgeItemStatus::Fresh, $item->status);
+    }
+
+    public function test_trashing_pieces_one_by_one_resolves_the_last_one(): void
+    {
+        $item = FridgeItem::factory()->for($this->household)->expiresIn(-1)->create(['quantity' => 2]);
+
+        $this->actingAs($this->user)->patchJson(route('fridge.trash', $item))
+            ->assertJson(['trashed' => 1, 'remaining' => 1, 'toast' => 'Eins weg, 1 übrig. Der Schuld-Counter dankt dir.']);
+        $this->actingAs($this->user)->patchJson(route('fridge.trash', $item))
+            ->assertJson(['trashed' => 2, 'remaining' => 0, 'toast' => 'Verbucht. Der Schuld-Counter dankt dir.']);
+
+        $this->assertSame(FridgeItemStatus::Trashed, $item->fresh()?->status);
+        $this->assertSame(1, $item->fresh()?->quantity);
+    }
+
     public function test_resolving_without_javascript_redirects_back(): void
     {
         $item = FridgeItem::factory()->for($this->household)->create();

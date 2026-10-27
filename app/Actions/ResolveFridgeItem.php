@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * Marks an item as eaten (hero counter) or thrown away (guilt counter).
+ * Marks one piece of an item as eaten (hero counter) or thrown away (guilt
+ * counter). With more than one piece left only the quantity goes down; the
+ * last piece resolves the item.
  */
 class ResolveFridgeItem
 {
@@ -20,7 +22,11 @@ class ResolveFridgeItem
         }
 
         return DB::transaction(function () use ($item, $outcome): HouseholdStat {
-            $item->update(['status' => $outcome]);
+            if ($item->quantity > 1) {
+                $item->decrement('quantity');
+            } else {
+                $item->update(['status' => $outcome]);
+            }
 
             $stats = HouseholdStat::query()->firstOrCreate(['household_id' => $item->household_id]);
             $stats->increment($outcome === FridgeItemStatus::Consumed ? 'saved_count' : 'trashed_count');
