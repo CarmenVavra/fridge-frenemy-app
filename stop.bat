@@ -13,7 +13,7 @@ taskkill /FI "WINDOWTITLE eq FridgeFrenemy-Frontend*" /T /F >nul 2>nul
 
 REM Falls noch etwas auf den Ports lauscht: Prozess beenden
 for %%P in (8550 5173) do (
-    for /f "tokens=5" %%I in ('netstat -ano ^| findstr /R /C:":%%P .*LISTENING"') do (
+    for /f "tokens=5" %%I in ('netstat -ano ^| findstr /R /C:":%%P  *0\.0\.0\.0:0 " /C:":%%P  *\[::\]:0 "') do (
         taskkill /PID %%I /T /F >nul 2>nul
     )
 )
