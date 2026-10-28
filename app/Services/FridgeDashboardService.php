@@ -44,6 +44,23 @@ class FridgeDashboardService
     }
 
     /**
+     * Ids of the household's active items with this barcode, soonest expiry first.
+     *
+     * @return list<string>
+     */
+    public function idsForBarcode(Household $household, string $barcode): array
+    {
+        return $household->fridgeItems()
+            ->active()
+            ->where('barcode', $barcode)
+            ->orderBy('expires_at')
+            ->pluck('id')
+            ->map(fn (mixed $id): string => (string) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
      * The most urgent undismissed alert of today, shown as the push banner.
      */
     public function pendingAlert(Household $household): ?ButlerAlert

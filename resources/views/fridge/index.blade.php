@@ -3,6 +3,7 @@
         'items' => $cards,
         'saved' => $stats->saved_count,
         'trashed' => $stats->trashed_count,
+        'findUrl' => route('fridge.find'),
         'alert' => $alert ? [
             'message' => $alert->message,
             'time' => $alert->created_at->format('H:i'),
@@ -61,6 +62,24 @@
             </div>
         </div>
 
+        {{-- Find an item by its barcode, to eat or bin it without scrolling --}}
+        <div class="border-b-2 border-ink px-5 py-3">
+            <button type="button" class="ff-btn-secondary" @click="startFind()" x-show="!scanning">
+                <x-icon name="scan-barcode" />Artikel per Barcode finden
+            </button>
+            <div x-show="scanning" x-cloak>
+                <div class="relative h-[230px] overflow-hidden bg-ink">
+                    <div id="ff-find-reader" class="absolute inset-0"></div>
+                    <div class="pointer-events-none absolute inset-x-9 top-[27px] h-[176px] overflow-hidden">
+                        <div class="h-[3px] animate-ff-scan bg-accent shadow-[0_0_12px_#ec3013]"></div>
+                    </div>
+                    <div class="pointer-events-none absolute inset-x-0 bottom-2 text-center text-xs font-semibold uppercase tracking-[.1em] text-white"
+                         aria-live="polite">Suche Barcode …</div>
+                </div>
+                <button type="button" class="ff-btn-secondary mt-2.5" @click="stopFind()">Scan abbrechen</button>
+            </div>
+        </div>
+
         @error('expires_at')
             <p role="alert" class="border-b-2 border-ink bg-accent-100 px-5 py-3 text-[13px] font-semibold text-accent-700">{{ $message }}</p>
         @enderror
@@ -68,9 +87,9 @@
         {{-- Filter --}}
         <div class="grid grid-cols-3 border-b-2 border-ink" role="group" aria-label="Artikel filtern">
             @foreach (['all' => ['Alle', 'items'], 'crit' => ['Kritisch', 'crit'], 'fresh' => ['Frisch', 'fresh']] as $key => [$label, $list])
-                <button type="button" @click="filter = '{{ $key }}'" :aria-pressed="filter === '{{ $key }}'"
+                <button type="button" @click="setFilter('{{ $key }}')" :aria-pressed="(! found && filter === '{{ $key }}').toString()"
                         @class(['cursor-pointer py-3 text-[13px] font-bold', 'border-r-2 border-ink' => ! $loop->last])
-                        :class="filter === '{{ $key }}' ? 'bg-ink text-white' : 'bg-transparent text-ink hover:bg-ink/5'">
+                        :class="! found && filter === '{{ $key }}' ? 'bg-ink text-white' : 'bg-transparent text-ink hover:bg-ink/5'">
                     {{ $label }} <span x-text="{{ $list }}.length"></span>
                 </button>
             @endforeach
@@ -80,6 +99,12 @@
         <p x-show="isEmpty" x-cloak class="px-5 py-12 text-[22px] font-extrabold leading-[1.15]">
             Nichts zu sehen.<br><span class="text-neutral-600">Verdächtig ordentlich.</span>
         </p>
+
+        {{-- Scan result --}}
+        <div x-show="found" x-cloak x-ref="found" class="flex items-center justify-between gap-3 border-b-2 border-ink bg-accent-100 px-5 py-3" role="status">
+            <p class="text-[13px] font-bold" x-text="found?.length === 1 ? 'Erwischt. Essen oder wegwerfen?' : 'Erwischt: ' + found?.length + ' Packungen. Die oberste läuft zuerst ab.'"></p>
+            <button type="button" class="flex-none text-[13px] font-bold underline underline-offset-4" @click="found = null">Alle zeigen</button>
+        </div>
 
         {{-- Item cards --}}
         <ul aria-label="Artikel im Kühlschrank">

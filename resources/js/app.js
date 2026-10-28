@@ -58,6 +58,38 @@ const ensureBarcodeDetector = () => {
     return barcodeDetectorReady;
 };
 
+/** Starts the camera in the element with this id and calls onCode with the decoded text. */
+const startBarcodeScanner = async (elementId, onCode) => {
+    const [{ Html5Qrcode, Html5QrcodeSupportedFormats: F }] = await Promise.all([import('html5-qrcode'), ensureBarcodeDetector()]);
+    const scanner = new Html5Qrcode(elementId, {
+        // QR and DataMatrix: newer GS1 codes that can carry the expiry date.
+        formatsToSupport: [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.QR_CODE, F.DATA_MATRIX],
+        useBarCodeDetectorIfSupported: true,
+        verbose: false,
+    });
+    await scanner.start(
+        { facingMode: 'environment' },
+        // No resolution constraints: on phones with several rear cameras they can make the
+        // browser pick a lens that cannot focus up close, and html5-qrcode scales every
+        // frame down to the qrbox anyway.
+        { fps: 10, qrbox: { width: 260, height: 140 } },
+        onCode,
+        () => {},
+    );
+
+    return scanner;
+};
+
+const stopBarcodeScanner = async (scanner) => {
+    if (!scanner) return;
+    try {
+        await scanner.stop();
+        scanner.clear();
+    } catch {
+        // Scanner was not running.
+    }
+};
+
 /* ------------------------------------------------------------------ */
 /* Date scanner (OCR)                                                  */
 /* ------------------------------------------------------------------ */
@@ -165,11 +197,62 @@ document.addEventListener('alpine:init', () => {
         open: {},
         leaving: {},
         today: isoDate(0),
+        scanning: false,
+        scanner: null,
+        found: null, // ids of the items matching the last scan, or null when not searching
 
         init() {
             if (config.alert) {
                 this.$store.ui.push(config.alert.message, config.alert.time, config.alert.dismiss_url);
             }
+        },
+
+        setFilter(filter) {
+            this.filter = filter;
+            this.found = null;
+        },
+
+        async startFind() {
+            if (this.scanning) return;
+            this.scanning = true;
+            this.found = null;
+
+            try {
+                this.scanner = await startBarcodeScanner('ff-find-reader', (code) => this.onFound(code));
+            } catch {
+                await this.stopFind();
+                this.$store.ui.toast('Keine Kamera verfügbar (oder keine Erlaubnis). Dann such eben selbst.');
+            }
+        },
+
+        async stopFind() {
+            const scanner = this.scanner;
+            this.scanner = null;
+            this.scanning = false;
+            await stopBarcodeScanner(scanner);
+        },
+
+        async onFound(code) {
+            // The camera keeps decoding until it has stopped; only the first hit counts.
+            if (!this.scanner) return;
+            await this.stopFind();
+            vibrate(60);
+
+            try {
+                const { data } = await window.axios.post(config.findUrl, { barcode: code });
+                if (!data.ids.length) {
+                    this.$store.ui.toast(data.message);
+                    return;
+                }
+                this.found = data.ids;
+                this.$nextTick(() => this.$refs.found?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+            } catch (error) {
+                this.$store.ui.toast(error.response?.data?.errors?.barcode?.[0] ?? 'Das hat nicht geklappt. Versuch es nochmal.');
+            }
+        },
+
+        destroy() {
+            this.stopFind();
         },
 
         get crit() {
@@ -183,6 +266,7 @@ document.addEventListener('alpine:init', () => {
         isVisible(id) {
             const item = this.items.find((i) => i.id === id);
             if (!item) return false;
+            if (this.found) return this.found.includes(id);
             if (this.filter === 'crit') return item.days <= 3;
             if (this.filter === 'fresh') return item.days > 3;
             return true;
@@ -193,7 +277,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         isOpen(item) {
-            return !!this.open[item.id] || item.days <= 1;
+            return !!this.open[item.id] || item.days <= 1 || !!this.found?.includes(item.id);
         },
 
         toggle(id) {
@@ -250,6 +334,8 @@ document.addEventListener('alpine:init', () => {
                 setTimeout(() => {
                     this.items = this.items.filter((i) => i.id !== item.id);
                     delete this.leaving[item.id];
+                    // Last scanned item gone: back to the full list.
+                    if (this.found && !this.items.some((i) => this.found.includes(i.id))) this.found = null;
                     this.saved = data.saved;
                     this.trashed = data.trashed;
                 }, 460);
@@ -315,22 +401,7 @@ document.addEventListener('alpine:init', () => {
             this.phase = 'scanning';
 
             try {
-                const [{ Html5Qrcode, Html5QrcodeSupportedFormats: F }] = await Promise.all([import('html5-qrcode'), ensureBarcodeDetector()]);
-                this.scanner = new Html5Qrcode('ff-reader', {
-                    // QR and DataMatrix: newer GS1 codes that can carry the expiry date.
-                    formatsToSupport: [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.QR_CODE, F.DATA_MATRIX],
-                    useBarCodeDetectorIfSupported: true,
-                    verbose: false,
-                });
-                await this.scanner.start(
-                    { facingMode: 'environment' },
-                    // No resolution constraints: on phones with several rear cameras they can make the
-                    // browser pick a lens that cannot focus up close, and html5-qrcode scales every
-                    // frame down to the qrbox anyway.
-                    { fps: 10, qrbox: { width: 260, height: 140 } },
-                    (code) => this.onDecoded(code),
-                    () => {},
-                );
+                this.scanner = await startBarcodeScanner('ff-reader', (code) => this.onDecoded(code));
             } catch {
                 await this.stopScanner();
                 this.phase = 'idle';
@@ -339,13 +410,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async stopScanner() {
-            if (!this.scanner) return;
-            try {
-                await this.scanner.stop();
-                this.scanner.clear();
-            } catch {
-                // Scanner was not running.
-            }
+            await stopBarcodeScanner(this.scanner);
             this.scanner = null;
         },
 

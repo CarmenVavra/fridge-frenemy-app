@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\ResolveFridgeItem;
 use App\Enums\FridgeItemStatus;
+use App\Http\Requests\ScanBarcodeRequest;
 use App\Http\Requests\StoreFridgeItemRequest;
 use App\Http\Requests\UpdateFridgeItemExpiryRequest;
 use App\Models\FridgeItem;
@@ -57,6 +58,19 @@ class FridgeController extends Controller
 
         return redirect()->route('fridge.index')
             ->with('toast', 'Neues Datum für '.$item->name.' notiert. Ich vergesse nichts.');
+    }
+
+    /**
+     * POST /api/fach-finden – which items in the fridge carry the scanned barcode.
+     */
+    public function find(ScanBarcodeRequest $request, FridgeDashboardService $dashboard): JsonResponse
+    {
+        $ids = $dashboard->idsForBarcode($this->household($request), (string) $request->validated('barcode'));
+
+        return response()->json([
+            'ids' => $ids,
+            'message' => $ids === [] ? 'Das liegt nicht im Kühlschrank. Zumindest nicht offiziell.' : null,
+        ]);
     }
 
     public function consume(Request $request, FridgeItem $item, ResolveFridgeItem $resolve): JsonResponse|RedirectResponse

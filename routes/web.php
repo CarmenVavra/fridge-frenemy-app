@@ -34,6 +34,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/fach', [FridgeController::class, 'index'])->name('fridge.index');
     Route::post('/fach/artikel', [FridgeController::class, 'store'])->name('fridge.store');
+    Route::post('/api/fach-finden', [FridgeController::class, 'find'])
+        ->middleware('throttle:30,1')->name('fridge.find');
     Route::patch('/fach/artikel/{item}/aufgegessen', [FridgeController::class, 'consume'])
         ->middleware('can:update,item')->name('fridge.consume');
     Route::patch('/fach/artikel/{item}/weggeworfen', [FridgeController::class, 'trash'])

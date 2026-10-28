@@ -176,6 +176,50 @@ class FridgeTest extends TestCase
         $this->assertSame(FridgeItemStatus::Trashed, $item->fresh()?->status);
     }
 
+    public function test_dashboard_offers_finding_an_item_by_barcode(): void
+    {
+        $this->actingAs($this->user)->get(route('fridge.index'))
+            ->assertOk()
+            ->assertSee('Artikel per Barcode finden')
+            ->assertSee('ff-find-reader');
+    }
+
+    public function test_scanning_a_barcode_finds_the_matching_items_soonest_first(): void
+    {
+        $later = FridgeItem::factory()->for($this->household)->expiresIn(9)->create(['barcode' => '4008400402222']);
+        $sooner = FridgeItem::factory()->for($this->household)->expiresIn(2)->create(['barcode' => '4008400402222']);
+        FridgeItem::factory()->for($this->household)->expiresIn(1)->create(['barcode' => '4000000000001']);
+        FridgeItem::factory()->for($this->household)->expiresIn(1)->create(['barcode' => '4008400402222', 'status' => FridgeItemStatus::Consumed]);
+        FridgeItem::factory()->for(Household::factory())->expiresIn(1)->create(['barcode' => '4008400402222']);
+
+        $this->actingAs($this->user)->postJson(route('fridge.find'), ['barcode' => '4008400402222'])
+            ->assertOk()
+            ->assertExactJson(['ids' => [$sooner->id, $later->id], 'message' => null]);
+    }
+
+    public function test_finding_reads_the_product_number_from_a_gs1_code(): void
+    {
+        $item = FridgeItem::factory()->for($this->household)->expiresIn(5)->create(['barcode' => '4008400402222']);
+
+        $this->actingAs($this->user)->postJson(route('fridge.find'), ['barcode' => '0104008400402222172612311012345'])
+            ->assertOk()
+            ->assertJsonPath('ids', [$item->id]);
+    }
+
+    public function test_finding_an_item_that_is_not_in_the_fridge_says_so(): void
+    {
+        $this->actingAs($this->user)->postJson(route('fridge.find'), ['barcode' => '4008400402222'])
+            ->assertOk()
+            ->assertJson(['ids' => [], 'message' => 'Das liegt nicht im Kühlschrank. Zumindest nicht offiziell.']);
+    }
+
+    public function test_finding_rejects_codes_that_are_no_product_numbers(): void
+    {
+        $this->actingAs($this->user)->postJson(route('fridge.find'), ['barcode' => 'https://example.com'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('barcode');
+    }
+
     public function test_consuming_one_of_several_pieces_keeps_the_rest(): void
     {
         $item = FridgeItem::factory()->for($this->household)->expiresIn(10)->create(['name' => 'Kaffeejoghurt', 'quantity' => 2, 'category' => null]);
